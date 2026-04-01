@@ -17,9 +17,9 @@ const About = () => {
                         рынке.
                     </p>
                 </div>
-                <div className="grid font-light text-gray-700">
+                <div className="grid gap-4 font-light text-gray-700 self-start">
                     <div>
-                        <h4 className="text-2xl font-semibold text-green-500">01</h4>
+                        <h4 className="text-2xl lg:text-4xl font-semibold text-green-500">01</h4>
                         <div>
                             <p>
                                 Надежное и эффективное торможение при любых скоростных
@@ -28,7 +28,7 @@ const About = () => {
                         </div>
                     </div>
                     <div>
-                        <h4 className="text-2xl font-semibold text-green-500">02</h4>
+                        <h4 className="text-2xl lg:text-4xl font-semibold text-green-500">02</h4>
                         <div>
                             <p>
                                 Производство располагается в России, что упрощает доставку и
@@ -37,7 +37,7 @@ const About = () => {
                         </div>
                     </div>
                     <div>
-                        <h4 className="text-2xl font-semibold text-green-500">03</h4>
+                        <h4 className="text-2xl lg:text-4xl font-semibold text-green-500">03</h4>
                         <div>
                             <p>
                                 Долговечность колодок, минимальный износ диска при
@@ -46,7 +46,7 @@ const About = () => {
                         </div>
                     </div>
                     <div>
-                        <h4 className="text-2xl font-semibold text-green-500">04</h4>
+                        <h4 className="text-2xl lg:text-4xl font-semibold text-green-500">04</h4>
                         <div>
                             <p>
                                 Проведенные испытания подтверждают отсутствие шума при
@@ -55,7 +55,7 @@ const About = () => {
                         </div>
                     </div>
                     <div>
-                        <h4 className="text-2xl font-semibold text-green-500">05</h4>
+                        <h4 className="text-2xl lg:text-4xl font-semibold text-green-500">05</h4>
                         <div>
                             <p>
                                 Соответствие требованиям ГОСТ и другим стандартам

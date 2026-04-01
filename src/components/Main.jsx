@@ -1,3 +1,5 @@
+import HeadingInfo from './HeadingInfo'
+
 import card1 from '../../src/assets/img/card-bg-1.png'
 import card2 from '../../src/assets/img/card-bg-2.png'
 import card3 from '../../src/assets/img/card-bg-3.png'
@@ -5,10 +7,11 @@ import card4 from '../../src/assets/img/card-bg-4.png'
 
 const Main = () => {
     return (
-        <main>
-            <div className="container mx-auto px-4 py-5 flex flex-col items-center">
+        <main id='plus' >
+            <div className="container lg:w-full  mx-auto px-4 py-5 flex flex-col">
+                <HeadingInfo />
 
-                <div className="self-start w-full mb-8">
+                <div className="self-start w-full my-8">
                     <h1 className="uppercase font-semibold text-3xl sm:text-4xl text-gray-900">
                         наши преимущества
                     </h1>
@@ -31,7 +34,7 @@ const Main = () => {
                     </p>
                 </div>
 
-                <div className="grid gap-10">
+                <div className="grid gap-10 md:grid-cols-2">
                     <div className="relative w-full max-w-4xl min-h-75 sm:min-h-100 rounded-xl overflow-hidden shadow-lg group flex items-center">
                         <img
                             src={card1}
@@ -39,11 +42,11 @@ const Main = () => {
                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 bg-linear-to-r from-black/80 via-black/50 to-transparent"></div>
-                        <div className="relative z-10 h-full flex flex-col justify-center p-6 sm:p-10 text-white">
-                            <h2 className="text-2xl sm:text-3xl font-bold mb-4 uppercase tracking-wide">
+                        <div className="relative z-10 h-full flex flex-col justify-center p-6 md:p-5  text-white">
+                            <h2 className="text-xl sm:text-2xl font-bold mb-4 uppercase tracking-wide">
                                 Оснащение
                             </h2>
-                            <p className="text-base sm:text-lg text-gray-200 max-w-lg leading-relaxed">
+                            <p className="text-base lg:text-lg text-gray-200 max-w-lg leading-relaxed">
                                 Располагаем передовым производственным оборудованием для
                                 обработки материалов, сборки продукции. Производство на уровне
                                 ведущих представителей рынка.
@@ -57,8 +60,8 @@ const Main = () => {
                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 bg-linear-to-r from-black/80 via-black/50 to-transparent"></div>
-                        <div className="relative z-10 h-full flex flex-col justify-center p-6 sm:p-10 text-white">
-                            <h2 className="text-2xl sm:text-3xl font-bold mb-4 uppercase tracking-wide">
+                        <div className="relative z-10 h-full flex flex-col justify-center p-6 md:p-5 text-white">
+                            <h2 className="text-xl sm:text-2xl font-bold mb-4 uppercase tracking-wide">
                                 Комплексное производство
                             </h2>
                             <p className="text-base sm:text-lg text-gray-200 max-w-lg leading-relaxed">
@@ -76,8 +79,8 @@ const Main = () => {
                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 bg-linear-to-r from-black/80 via-black/50 to-transparent"></div>
-                        <div className="relative z-10 h-full flex flex-col justify-center p-6 sm:p-10 text-white">
-                            <h2 className="text-2xl sm:text-3xl font-bold mb-4 uppercase tracking-wide">
+                        <div className="relative z-10 h-full flex flex-col justify-center p-6 md:p-5 text-white">
+                            <h2 className="text-xl sm:text-2xl font-bold mb-4 uppercase tracking-wide">
                                 Собственные цеха
                             </h2>
                             <p className="text-base sm:text-lg text-gray-200 max-w-lg leading-relaxed">
@@ -94,8 +97,8 @@ const Main = () => {
                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 bg-linear-to-r from-black/80 via-black/50 to-transparent"></div>
-                        <div className="relative z-10 h-full flex flex-col justify-center p-6 sm:p-10 text-white">
-                            <h2 className="text-2xl sm:text-3xl font-bold mb-4 uppercase tracking-wide">
+                        <div className="relative z-10 h-full flex flex-col justify-center p-6 md:p-5 text-white">
+                            <h2 className="text-xl sm:text-2xl font-bold mb-4 uppercase tracking-wide">
                                 Квалифицированный персонал
                             </h2>
                             <p className="text-base sm:text-lg text-gray-200 max-w-lg leading-relaxed">
@@ -103,9 +106,6 @@ const Main = () => {
                                 поэтому формируем штат исключительно из компетентных
                                 специалистов, имеющих соответствующую квалификацию и опыт.
                             </p>
-                            {/* <button className="mt-6 self-start px-6 py-2 border border-white text-white hover:bg-white hover:text-black transition-all duration-300 rounded font-medium">
-                                Подробнее
-                            </button> */}
                         </div>
                     </div>
                 </div>

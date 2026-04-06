@@ -1,19 +1,29 @@
 import { Routes, Route } from "react-router-dom"
+import { useEffect } from "react"
+
 import Header from "./components/Header"
-import Heading from "./components/Heading"
-import Main from "./components/Main"
-import About from "./components/About"
 import Footer from "./components/Footer"
 import ErrTablet from "./components/ErrTablet"
 
+import MainPage from "./pages/MainPage"
+import WarrantyPage from "./pages/WarrantyPage"
+
 const App = () => {
+
+
+
   return (
     <section>
       <ErrTablet />
       <Header />
-      <Heading />
-      <Main />
-      <About />
+
+      <>
+        <Routes>
+          <Route path="/" element={<MainPage />}></Route>
+          <Route path="/warranty" element={<WarrantyPage />}></Route>
+        </Routes>
+      </>
+
       <Footer />
     </section>
   )

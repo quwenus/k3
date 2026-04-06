@@ -15,7 +15,7 @@ const Heading = () => {
 
     return (
         <section>
-            <div className="container mx-auto px-4 py-5 flex flex-col lg:grid lg:grid-cols-2">
+            <div className="container mx-auto px-4 py-5 flex flex-col lg:grid lg:grid-cols-2 mt-10">
                 <div>
                     <div className="self-start">
                         <h1 className="uppercase font-semibold text-4xl">тормозные колодки от производителя</h1>

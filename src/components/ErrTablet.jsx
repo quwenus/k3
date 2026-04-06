@@ -1,26 +1,41 @@
-import Modal from 'react-modal'
-import { useState, useEffect } from 'react'
+import Modal from 'react-modal';
+import { useState, useEffect } from 'react';
 
-Modal.setAppElement("#root")
+
+Modal.setAppElement("#root");
 
 const ErrTablet = () => {
+    const [isOpen, setIsOpen] = useState(null);
 
-    const [isOpen, setIsOpen] = useState(true)
+    const closeModal = () => {
+        setIsOpen(false);
+        localStorage.setItem('k3_modal_closed', 'true');
+    };
 
-    const toggleModal = () => setIsOpen(!isOpen)
-
-    const closeModal = () => setIsOpen(false)
+    useEffect(() => {
+        const isClosed = localStorage.getItem('k3_modal_closed');
+        
+        if (!isClosed) {
+            setIsOpen(true);
+        } else {
+            setIsOpen(false);
+        }
+    }, []);
 
     useEffect(() => {
         if (isOpen) {
-            document.body.style.overflow = 'hidden'
+            document.body.style.overflow = 'hidden';
         } else {
-            document.body.style.overflow = 'auto'
+            document.body.style.overflow = 'auto';
         }
         return () => {
             document.body.style.overflow = 'auto';
-        }
-    }, [isOpen])
+        };
+    }, [isOpen]);
+
+    if (isOpen === null) {
+        return null;
+    }
 
     const customStyles = {
         content: {
@@ -63,11 +78,11 @@ const ErrTablet = () => {
                     </div>
                 </div>
 
-                <h2 className="text-3xl md:text-xl font-bold text-gray-900 mb-4 uppercase">
+                <h2 className="text-2xl md:text-xl font-bold text-gray-900 mb-4 uppercase text-center">
                     Сайт находится в разработке
                 </h2>
 
-                <p className="text-gray-600 text-lg mb-8 leading-relaxed">
+                <p className="text-gray-600 text-base md:text-sm mb-8 leading-relaxed text-center">
                     Мы активно работаем над запуском нашего нового сайта.<br />
                     Пожалуйста, зайдите позже, чтобы увидеть полный каталог продукции K3.
                 </p>
@@ -81,10 +96,8 @@ const ErrTablet = () => {
                     </button>
                 </div>
             </div>
-
         </Modal>
-    )
-}
+    );
+};
 
-
-export default ErrTablet
+export default ErrTablet;

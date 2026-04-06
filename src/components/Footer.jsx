@@ -11,7 +11,7 @@ const Footer = () => {
                     <p className='font-semibold text-xs lg:text-lg'>Официальный поставщик тормозных колодок K3</p>
                 </div>
                 <div className=''>
-                    <a href="mailto:info@k3-parts.ru" className='text-xs lg:text-lg font-semibold text-green-500'>info@k3-parts.ru</a>
+                    <a href="mailto:info@k3-parts.ru" className='text-xs lg:text-lg font-semibold text-green-600'>info@k3-parts.ru</a>
                 </div>
                 <div>
                     <nav>
@@ -23,7 +23,7 @@ const Footer = () => {
                             <li><a href="#about" className="hover:text-green-600 transition-colors">О нас</a></li>
                             <li><a href="#" className="hover:text-green-600 transition-colors">Каталог</a></li>
                             <li><a href="#" className="hover:text-green-600 transition-colors">Сотрудничество</a></li>
-                            <li><a href="#" className="hover:text-green-600 transition-colors">Гарантии</a></li>
+                            <li><a href="/warranty" className="hover:text-green-600 transition-colors">Гарантии</a></li>
                         </ul>
                     </nav>
                 </div>

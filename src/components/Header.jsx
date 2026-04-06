@@ -1,12 +1,38 @@
 import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import logo from '../../src/assets/img/logo-green.svg';
 
 const Header = () => {
     const [isOpen, setIsOpen] = useState(false);
+    const navigate = useNavigate();
+    const location = useLocation();
 
     const toggleMenu = () => setIsOpen(!isOpen);
+    const closeMenu = () => setIsOpen(false);
 
-    const closeMenu = () => setIsOpen(false)
+    const scrollToSection = (e, sectionId, targetPath = '/') => {
+        e.preventDefault();
+
+        closeMenu();
+
+        if (location.pathname === targetPath) {
+            const element = document.getElementById(sectionId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } else {
+
+            navigate(`${targetPath}#${sectionId}`);
+
+
+            setTimeout(() => {
+                const element = document.getElementById(sectionId);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 100);
+        }
+    };
 
     return (
         <header className="bg-white shadow-sm top-0 z-50 sticky">
@@ -14,16 +40,16 @@ const Header = () => {
 
                 {/* Логотип */}
                 <div className="shrink-0">
-                    <a href="/"><img src={logo} alt="K3" className="max-w-10 sm:max-w-15 " /></a>
+                    <a href="/" onClick={(e) => { closeMenu(); }}>
+                        <img src={logo} alt="K3" className="max-w-10 sm:max-w-15" />
+                    </a>
                 </div>
 
                 <div className='sm:hover:text-green-600 sm:transition-colors lg:text-xl xl:text-2xl'>
-                    <a href="tel:+79687177737"
-                        className='font-semibold'
-                    >+7 (968) 717-77-37</a>
+                    <a href="tel:+79687177737" className='font-semibold'>+7 (968) 717-77-37</a>
                 </div>
 
-                {/* Кнопка Бургера (видна только на мобильных < 640px) */}
+                {/* Кнопка Бургера */}
                 <button
                     onClick={toggleMenu}
                     className="md:hidden focus:outline-none p-2"
@@ -36,7 +62,7 @@ const Header = () => {
                     </div>
                 </button>
 
-                {/* Навигация (Меню) */}
+                {/* Навигация */}
                 <nav
                     className={`
                     absolute top-full left-0 w-full bg-white shadow-lg 
@@ -51,11 +77,29 @@ const Header = () => {
                     font-medium text-gray-700
                     ${isOpen ? 'py-4 space-y-4' : 'py-0 space-y-0 md:py-0 md:space-y-0'}
                     `}>
-                        <li><a href="#" onClick={closeMenu} className="hover:text-green-600 transition-colors md:hidden">Главная</a></li>
-                        <li><a href="#about" onClick={closeMenu} className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">О нас</a></li>
+                        <li className="md:hidden">
+                            <a href="/" onClick={(e) => { e.preventDefault(); navigate('/'); closeMenu(); }} className="hover:text-green-600 transition-colors">
+                                Главная
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                href="/#about"
+                                onClick={(e) => scrollToSection(e, 'about', '/')}
+                                className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl cursor-pointer"
+                            >
+                                О нас
+                            </a>
+                        </li>
+
                         <li><a href="#" onClick={closeMenu} className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">Каталог</a></li>
                         <li><a href="#" onClick={closeMenu} className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">Сотрудничество</a></li>
-                        <li><a href="#" onClick={closeMenu} className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">Гарантии</a></li>
+
+                        <li>
+                            <a href="/warranty" onClick={closeMenu} className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">Гарантии</a>
+                        </li>
+
                         <li><a href="" className="text-green-600 font-semibold hover:underline lg:text-lg xl:text-xl">Войти</a></li>
                     </ul>
                 </nav>

@@ -12,7 +12,6 @@ const Header = () => {
 
     const scrollToSection = (e, sectionId, targetPath = '/') => {
         e.preventDefault();
-
         closeMenu();
 
         if (location.pathname === targetPath) {
@@ -21,10 +20,7 @@ const Header = () => {
                 element.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         } else {
-
             navigate(`${targetPath}#${sectionId}`);
-
-
             setTimeout(() => {
                 const element = document.getElementById(sectionId);
                 if (element) {
@@ -36,23 +32,73 @@ const Header = () => {
 
     return (
         <header className="bg-white shadow-sm top-0 z-50 sticky">
-            <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+            {/* 
+                Сетка для десктопа (3 колонки):
+                1. Левая: [200px] - Фиксирована под логотип (как в футере)
+                2. Центр: [1fr] - Растягивается. Сюда мы поместим телефон и почту.
+                3. Право: [auto] - Меню (автоматически выровняется с футером)
+            */}
+            <div className="container mx-auto px-4 py-3 hidden md:grid grid-cols-[200px_1fr_auto] items-center gap-8">
 
-                {/* Логотип */}
+                {/* 1. Логотип */}
                 <div className="shrink-0">
-                    <a href="/" onClick={(e) => { closeMenu(); }}>
-                        <img src={logo} alt="K3" className="max-w-10 sm:max-w-15" />
+                    <a href="/" onClick={(e) => { e.preventDefault(); navigate('/'); }}>
+                        <img src={logo} alt="K3" className="max-w-15" />
                     </a>
                 </div>
 
-                <div className='sm:hover:text-green-600 sm:transition-colors lg:text-xl xl:text-2xl'>
-                    <a href="tel:+79687177737" className='font-semibold'>+7 (968) 717-77-37</a>
+                {/* 2. Центральная колонка: Телефон + Почта */}
+                <div className="flex flex-col items-center justify-center gap-1">
+                    <div>
+                        <a href="tel:+79687177737" className='font-semibold lg:text-xl xl:text-2xl hover:text-green-600 transition-colors leading-tight'>
+                            +7 (968) 717-77-37
+                        </a>
+                    </div>
+                    <div>
+                        <a href="mailto:info@k3-parts.ru" className='text-xs lg:text-sm font-semibold text-green-600 hover:underline leading-tight'>
+                            info@k3-parts.ru
+                        </a>
+                    </div>
                 </div>
 
-                {/* Кнопка Бургера */}
+                {/* 3. Навигация (справа) */}
+                <nav>
+                    <ul className="flex items-center space-x-6 font-semibold text-gray-700">
+                        <li>
+                            <a href="/" onClick={(e) => { e.preventDefault(); navigate('/'); }} className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">
+                                Главная
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/#about" onClick={(e) => scrollToSection(e, 'about', '/')} className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl cursor-pointer">
+                                О нас
+                            </a>
+                        </li>
+                        <li><a href="/catalog" className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">Каталог</a></li>
+                        <li><a href="#" className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">Сотрудничество</a></li>
+                        <li>
+                            <a href="/warranty" className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">Гарантии</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
+            {/* Мобильная версия */}
+            <div className="md:hidden container mx-auto px-4 py-3 flex justify-between items-center">
+                <div className="shrink-0">
+                    <a href="/" onClick={(e) => { e.preventDefault(); navigate('/'); }}>
+                        <img src={logo} alt="K3" className="max-w-10" />
+                    </a>
+                </div>
+
+                <div className='text-right'>
+                    <a href="tel:+79687177737" className='block font-semibold text-sm sm:text-base'>+7 (968) 717-77-37</a>
+                    <a href="mailto:info@k3-parts.ru" className='hidden text-[10px] text-green-600 font-semibold'>info@k3-parts.ru</a>
+                </div>
+
                 <button
                     onClick={toggleMenu}
-                    className="md:hidden focus:outline-none p-2"
+                    className="focus:outline-none p-2"
                     aria-label="Открыть меню"
                 >
                     <div className="w-6 h-6 flex flex-col justify-center space-y-1.5">
@@ -61,49 +107,23 @@ const Header = () => {
                         <span className={`block w-full h-0.5 bg-gray-800 transition-all duration-300 ease-in-out origin-center ${isOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
                     </div>
                 </button>
-
-                {/* Навигация */}
-                <nav
-                    className={`
-                    absolute top-full left-0 w-full bg-white shadow-lg 
-                    transition-all duration-500 ease-in-out overflow-hidden
-                    md:relative md:block md:w-auto md:bg-transparent md:shadow-none md:transform-none md:overflow-visible
-                    ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 md:max-h-full md:opacity-100'}
-                `}
-                >
-                    <ul className={`
-                    flex flex-col md:flex-row items-center 
-                    md:py-0 md:space-y-0 md:space-x-6 
-                    font-medium text-gray-700
-                    ${isOpen ? 'py-4 space-y-4' : 'py-0 space-y-0 md:py-0 md:space-y-0'}
-                    `}>
-                        <li className="md:hidden">
-                            <a href="/" onClick={(e) => { e.preventDefault(); navigate('/'); closeMenu(); }} className="hover:text-green-600 transition-colors">
-                                Главная
-                            </a>
-                        </li>
-
-                        <li>
-                            <a
-                                href="/#about"
-                                onClick={(e) => scrollToSection(e, 'about', '/')}
-                                className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl cursor-pointer"
-                            >
-                                О нас
-                            </a>
-                        </li>
-
-                        <li><a href="#" onClick={closeMenu} className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">Каталог</a></li>
-                        <li><a href="#" onClick={closeMenu} className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">Сотрудничество</a></li>
-
-                        <li>
-                            <a href="/warranty" onClick={closeMenu} className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">Гарантии</a>
-                        </li>
-
-                        <li><a href="" className="text-green-600 font-semibold hover:underline lg:text-lg xl:text-xl">Войти</a></li>
-                    </ul>
-                </nav>
             </div>
+
+            {/* Выпадающее мобильное меню */}
+            <nav
+                className={`md:hidden absolute top-full left-0 w-full bg-white shadow-lg transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
+            >
+                <ul className={`flex flex-col items-center font-medium text-gray-700 ${isOpen ? 'py-4 space-y-4' : 'py-0 space-y-0'}`}>
+                    <li><a href="/" onClick={() => { navigate('/'); closeMenu(); }} className="hover:text-green-600 transition-colors text-lg">Главная</a></li>
+                    <li><a href="/#about" onClick={(e) => scrollToSection(e, 'about', '/')} className="hover:text-green-600 transition-colors text-lg">О нас</a></li>
+                    <li><a href="/catalog" onClick={closeMenu} className="hover:text-green-600 transition-colors text-lg">Каталог</a></li>
+                    <li><a href="#" onClick={closeMenu} className="hover:text-green-600 transition-colors text-lg">Сотрудничество</a></li>
+                    <li><a href="/warranty" onClick={closeMenu} className="hover:text-green-600 transition-colors text-lg">Гарантии</a></li>
+                    <li className="pt-2 border-t mt-2">
+                        <a href="mailto:info@k3-parts.ru" className="text-green-600 font-bold">info@k3-parts.ru</a>
+                    </li>
+                </ul>
+            </nav>
         </header>
     );
 };

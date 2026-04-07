@@ -8,6 +8,8 @@ import ErrTablet from "./components/ErrTablet"
 import MainPage from "./pages/MainPage"
 import WarrantyPage from "./pages/WarrantyPage"
 
+import CatalogPage from "./pages/CatalogPage"
+
 const App = () => {
 
 
@@ -21,6 +23,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<MainPage />}></Route>
           <Route path="/warranty" element={<WarrantyPage />}></Route>
+          <Route path="/catalog" element={<CatalogPage />}></Route>
         </Routes>
       </>
 

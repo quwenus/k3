@@ -11,7 +11,7 @@ const Footer = () => {
                     <p className='font-semibold text-xs lg:text-lg'>Официальный поставщик тормозных колодок K3</p>
                 </div>
                 <div>
-                    <a href="mailto:info@k3-parts.ru" className='text-xs lg:text-lg font-semibold text-green-600'>info@k3-parts.ru</a>
+                    <a href="mailto:info@k3-parts.ru" className='text-xs lg:text-lg font-semibold text-green-600 hover:underline'>info@k3-parts.ru</a>
                 </div>
                 <div>
                     <nav>
@@ -20,7 +20,9 @@ const Footer = () => {
                             md:py-0 md:space-y-0 md:space-x-6 
                             font-semibold text-xs hidden lg:text-lg
                             `}>
-                            <li><a href="#about" className="hover:text-green-600 transition-colors">О нас</a></li>
+                            <li><a href="/#about" onClick={(e) => scrollToSection(e, 'about', '/')} className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl cursor-pointer">
+                                О нас
+                            </a></li>
                             <li><a href="/catalog" className="hover:text-green-600 transition-colors">Каталог</a></li>
                             <li><a href="#" className="hover:text-green-600 transition-colors">Сотрудничество</a></li>
                             <li><a href="/warranty" className="hover:text-green-600 transition-colors">Гарантии</a></li>

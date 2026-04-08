@@ -18,7 +18,7 @@ const SearchBar = () => {
     };
 
     return (
-        <div className="w-full  p-6 bg-gray-300/20 rounded-xl shadow-sm ">
+        <div className=" p-6 bg-gray-300/20 rounded-xl shadow-sm ">
 
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
                 Быстрый <span className="font-extrabold">поиск</span>

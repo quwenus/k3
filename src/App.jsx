@@ -7,13 +7,10 @@ import ErrTablet from "./components/ErrTablet"
 
 import MainPage from "./pages/MainPage"
 import WarrantyPage from "./pages/WarrantyPage"
-
 import CatalogPage from "./pages/CatalogPage"
+import CatalogCarPage from "./pages/CatalogCarPage"
 
 const App = () => {
-
-
-
   return (
     <section>
       <ErrTablet />
@@ -24,6 +21,7 @@ const App = () => {
           <Route path="/" element={<MainPage />}></Route>
           <Route path="/warranty" element={<WarrantyPage />}></Route>
           <Route path="/catalog" element={<CatalogPage />}></Route>
+          <Route path="/catalog/car" element={<CatalogCarPage />}></Route>
         </Routes>
       </>
 

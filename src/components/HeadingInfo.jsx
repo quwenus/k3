@@ -2,7 +2,7 @@ import background from '../../src/assets/img/hero-img-min.png'
 
 const HeadingInfo = () => {
     return (
-        <div className="grid gap-2 font-light text-gray-700 mt-10 md:grid-cols-2 md:gap-6 md:justify-items-center">
+        <div className="grid gap-2 font-light text-gray-700 my-10 md:grid-cols-2 md:gap-6 md:justify-items-center">
             <div className='gap-2 grid'>
                 <p>
                     Компания К3 занимается изготовлением тормозных колодок, используя для
@@ -20,7 +20,7 @@ const HeadingInfo = () => {
                 </p>
             </div>
             <div className='md:max-w-sm md:justify-self-end'>
-                <img src={background} alt="" />
+                <img src={background} alt="фоновое изображение" />
             </div>
         </div>
     )

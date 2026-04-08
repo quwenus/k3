@@ -34,21 +34,21 @@ const Header = () => {
         <header className="bg-white shadow-sm top-0 z-50 sticky">
             {/* 
                 Сетка для десктопа (3 колонки):
-                1. Левая: [200px] - Фиксирована под логотип (как в футере)
+                1. Левая: [50px] - Фиксирована под логотип (как в футере)
                 2. Центр: [1fr] - Растягивается. Сюда мы поместим телефон и почту.
                 3. Право: [auto] - Меню (автоматически выровняется с футером)
             */}
-            <div className="container mx-auto px-4 py-3 hidden md:grid grid-cols-[200px_1fr_auto] items-center gap-8">
+            <div className="container mx-auto px-4 py-3 hidden md:grid grid-cols-[50px_1fr_auto] items-center gap-8">
 
                 {/* 1. Логотип */}
                 <div className="shrink-0">
-                    <a href="/" onClick={(e) => { e.preventDefault(); navigate('/'); }}>
+                    <a href="/">
                         <img src={logo} alt="K3" className="max-w-15" />
                     </a>
                 </div>
 
                 {/* 2. Центральная колонка: Телефон + Почта */}
-                <div className="flex flex-col items-center justify-center gap-1">
+                <div className="flex flex-col items-center w-full justify-center gap-1">
                     <div>
                         <a href="tel:+79687177737" className='font-semibold lg:text-xl xl:text-2xl hover:text-green-600 transition-colors leading-tight'>
                             +7 (968) 717-77-37
@@ -63,7 +63,7 @@ const Header = () => {
 
                 {/* 3. Навигация (справа) */}
                 <nav>
-                    <ul className="flex items-center space-x-6 font-semibold text-gray-700">
+                    <ul className="flex items-center space-x-6 font-semibold ">
                         <li>
                             <a href="/" onClick={(e) => { e.preventDefault(); navigate('/'); }} className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">
                                 Главная

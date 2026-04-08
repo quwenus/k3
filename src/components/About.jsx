@@ -2,8 +2,8 @@
 
 const About = () => {
     return (
-        <section id="about">
-            <div className="container mx-auto px-4 py-5 flex flex-col items-center">
+        <section id="about" className="scroll-mt-24">
+            <div className="container mx-auto px-4 py-5 my-10 flex flex-col items-center">
                 <div className="self-start w-full mb-8">
                     <h1 className="uppercase font-semibold text-3xl sm:text-4xl text-gray-900">О компании</h1>
                 </div>

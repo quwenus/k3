@@ -1,0 +1,14 @@
+[Unit]
+Description=K3 Backend Service
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/k3-app/backend
+ExecStart=/usr/bin/node server.js
+Restart=always
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

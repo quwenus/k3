@@ -1,0 +1,159 @@
+- name: Provision and Deploy K3 Application
+  hosts: web
+  become: yes
+  tasks:
+    - name: Install system dependencies
+      ansible.builtin.apt:
+        name:
+          - debian-keyring
+          - debian-archive-keyring
+          - apt-transport-https
+          - curl
+          - mysql-server
+          - nodejs
+          - npm
+        state: present
+        update_cache: yes
+
+    - name: Add Caddy GPG key
+      ansible.builtin.shell:
+        cmd: curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+        creates: /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+
+    - name: Add Caddy repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/caddy-stable-archive-keyring.gpg] https://dl.cloudsmith.io/public/caddy/stable/deb/debian any-version main"
+        state: present
+        filename: caddy-stable
+
+    - name: Install Caddy
+      ansible.builtin.apt:
+        name: caddy
+        state: present
+        update_cache: yes
+
+    - name: Start MySQL service
+      ansible.builtin.service:
+        name: mysql
+        state: started
+        enabled: yes
+
+    - name: Create database
+      ansible.builtin.shell: mysql -e "CREATE DATABASE IF NOT EXISTS k3_parts CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+    - name: Create database user
+      ansible.builtin.shell: mysql -e "CREATE USER IF NOT EXISTS 'admin'@'localhost' IDENTIFIED BY 'shpR1CQtunMLsNPE'; GRANT ALL PRIVILEGES ON k3_parts.* TO 'admin'@'localhost'; FLUSH PRIVILEGES;"
+
+    - name: Copy database schema and seed files
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "/tmp/{{ item }}"
+        mode: '0600'
+      loop:
+        - schema.sql
+        - seed.sql
+
+    - name: Import database schema
+      ansible.builtin.shell: mysql -u admin -pshpR1CQtunMLsNPE k3_parts < /tmp/schema.sql
+
+    - name: Import database seed data
+      ansible.builtin.shell: mysql -u admin -pshpR1CQtunMLsNPE k3_parts < /tmp/seed.sql
+
+    - name: Create directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+      loop:
+        - /var/www/k3-app
+        - /var/www/k3-app/frontend
+        - /var/www/k3-app/backend
+
+    - name: Copy frontend build files
+      ansible.builtin.copy:
+        src: ../dist/
+        dest: /var/www/k3-app/frontend/
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Copy frontend product images
+      ansible.builtin.copy:
+        src: ../src/assets/img/
+        dest: /var/www/k3-app/frontend/assets/img/
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Copy backend files
+      ansible.builtin.copy:
+        src: "../backend/{{ item }}"
+        dest: "/var/www/k3-app/backend/{{ item }}"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      loop:
+        - package.json
+        - package-lock.json
+        - server.js
+
+    - name: Create backend env file
+      ansible.builtin.copy:
+        dest: /var/www/k3-app/backend/.env
+        content: |
+          PORT=5001
+          DB_HOST=127.0.0.1
+          DB_USER=admin
+          DB_PASSWORD=shpR1CQtunMLsNPE
+          DB_NAME=k3_parts
+          JWT_SECRET=super_secret_key_for_future
+          NODE_ENV=production
+        owner: www-data
+        group: www-data
+        mode: '0600'
+
+    - name: Install backend dependencies
+      ansible.builtin.command:
+        cmd: npm install --omit=dev
+        chdir: /var/www/k3-app/backend
+      environment:
+        NODE_ENV: production
+
+    - name: Set permissions
+      ansible.builtin.file:
+        path: /var/www/k3-app
+        state: directory
+        recurse: yes
+        owner: www-data
+        group: www-data
+
+    - name: Copy systemd service file
+      ansible.builtin.copy:
+        src: k3-backend.service
+        dest: /etc/systemd/system/k3-backend.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Start backend service
+      ansible.builtin.systemd:
+        name: k3-backend
+        state: restarted
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Copy Caddyfile
+      ansible.builtin.copy:
+        src: Caddyfile
+        dest: /etc/caddy/Caddyfile
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Restart Caddy
+      ansible.builtin.service:
+        name: caddy
+        state: restarted
+        enabled: yes

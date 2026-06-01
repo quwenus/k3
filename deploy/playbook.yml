@@ -59,6 +59,11 @@
     - name: Import database seed data
       ansible.builtin.shell: mysql -u admin -pshpR1CQtunMLsNPE k3_parts < /tmp/seed.sql
 
+    - name: Clean remote frontend directory
+      ansible.builtin.file:
+        path: /var/www/k3-app/frontend
+        state: absent
+
     - name: Create directories
       ansible.builtin.file:
         path: "{{ item }}"

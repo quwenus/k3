@@ -10,7 +10,7 @@ const CarMain = () => {
     const [selectedProduct, setSelectedProduct] = useState(null);
 
     useEffect(() => {
-        fetch('http://localhost:5123/api/products')
+        fetch('/api/products')
             .then(res => res.json())
             .then(response => {
                 if (response && response.data) {

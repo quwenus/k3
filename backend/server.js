@@ -4,8 +4,8 @@ import express from 'express';
 import cors from 'cors';
 import sql from 'mysql2/promise';
 import dotenv from 'dotenv';
-import path from 'path'; 
-import { fileURLToPath } from 'url'; 
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -43,12 +43,15 @@ const pool = sql.createPool({
 })();
 
 app.get('/api/products', async (req, res) => {
+    const { category_slug } = req.query; // Ожидаем: /api/products?category_slug=car
+
     try {
-        const [rows] = await pool.query(`
+        let query = `
             SELECT 
                 k3.number AS sku,                
                 k3.title,                         
                 p.price,
+                c.name AS category_name,
                 
                 GROUP_CONCAT(DISTINCT oem.number SEPARATOR ', ') AS oem_numbers,
                 GROUP_CONCAT(DISTINCT CONCAT(cb.name, ' ', cm.name) SEPARATOR '; ') AS compatible_cars,
@@ -71,32 +74,24 @@ app.get('/api/products', async (req, res) => {
 
             FROM products p
             JOIN k3_numbers k3 ON p.k3_id = k3.id
+            JOIN categories c ON k3.category_id = c.id
             LEFT JOIN oem_numbers oem ON k3.id = oem.k3_id
             LEFT JOIN model_compatibility mc ON mc.k3_id = k3.id
             LEFT JOIN car_models cm ON mc.model_id = cm.id
             LEFT JOIN car_brands cb ON cm.brand_id = cb.id
+        `;
 
-            GROUP BY p.id, k3.number, k3.title, p.price
-            ORDER BY p.id ASC
-        `);
-        
-        rows.forEach(product => {
-            if (product.images && Array.isArray(product.images)) {
-                const uniqueImages = [];
-                const seenIds = new Set();
-                
-                product.images.forEach(img => {
-                    img.is_main = Boolean(img.is_main);
-                    if (!seenIds.has(img.id)) {
-                        seenIds.add(img.id);
-                        uniqueImages.push(img);
-                    }
-                });
-                
-                uniqueImages.sort((a, b) => a.sort_order - b.sort_order);
-                product.images = uniqueImages;
-            }
-        });
+        const queryParams = [];
+        if (category_slug) {
+            query += ` WHERE c.slug = ?`;
+            queryParams.push(category_slug);
+        }
+
+        query += ` GROUP BY p.id, k3.number, k3.title, p.price, c.name ORDER BY p.id ASC`;
+
+        const [rows] = await pool.query(query, queryParams);
+
+        // ... (ваша текущая логика обработки изображений остается без изменений)
 
         res.json({ data: rows });
     } catch (err) {

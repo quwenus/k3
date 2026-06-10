@@ -2,13 +2,15 @@ import logo from '../../src/assets/img/logo-green.svg';
 
 const Footer = () => {
     return (
-        <footer className=" bg-gray-300/20 w-full shadow-sm">
-            <div className="container mx-auto px-4 py-5 flex justify-between items-center gap-4 ">
+        <footer className=" bg-gray-100 w-full shadow-sm">
+            <div className="container mx-auto px-4 py-3 flex justify-between items-center gap-4 ">
                 <div className="shrink-0 ">
                     <a href="/"><img src={logo} alt="K3" className="max-w-10 sm:max-w-15 " /></a>
                 </div>
                 <div className='max-w-40 xl:max-w-lg'>
-                    <p className='font-semibold text-xs lg:text-lg'>Официальный поставщик тормозных колодок K3</p>
+                    <a href="tel:+79687177737" className='text-xs lg:text-lg font-semibold hover:underline'>
+                        +7 (968) 717-77-37
+                    </a>
                 </div>
                 <div>
                     <a href="mailto:info@k3-parts.ru" className='text-xs lg:text-lg font-semibold text-green-600 hover:underline'>info@k3-parts.ru</a>

@@ -1,5 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import card3 from '../../src/assets/img/card-bg-3.png';
+import moto from '../../src/assets/img/moto-bg.jpg';
+
+import car from '../../src/assets/img/car-bg.jpg'
 
 
 const ChooseCategory = () => {
@@ -14,7 +16,7 @@ const ChooseCategory = () => {
     const isMotoActive = location.pathname === '/catalog/moto';
 
     // Общий класс для карточки
-    const baseCardClass = "relative w-full max-w-4xl min-h-[300px] sm:min-h-[400px] rounded-xl overflow-hidden shadow-lg group flex items-center justify-center transition-all duration-300 cursor-pointer";
+    const baseCardClass = "relative w-full max-w-2xl min-h-[250px] sm:min-h-[px] rounded-xl overflow-hidden shadow-lg group flex items-center justify-center transition-all duration-300 cursor-pointer";
 
     const activeClass = "opacity-80 hover:opacity-100 hover:scale-[1.01]";
 
@@ -26,9 +28,9 @@ const ChooseCategory = () => {
                 className={`${baseCardClass} ${activeClass}`}
             >
                 <img
-                    src={card3}
+                    src={car}
                     alt="Автомобили"
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="absolute self-center inset-0 object-cover transition-transform duration-700 group-hover:scale-105"
                 />
 
                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors"></div>
@@ -48,9 +50,9 @@ const ChooseCategory = () => {
             >
 
                 <img
-                    src={card3} // <-- ЗАМЕНИТЕ НА КАРТИНКУ МОТОЦИКЛОВ
+                    src={moto} // <-- ЗАМЕНИТЕ НА КАРТИНКУ МОТОЦИКЛОВ
                     alt="Мотоциклы"
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="absolute inset-0 self-center object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors"></div>
 

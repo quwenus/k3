@@ -31,7 +31,7 @@ const Header = () => {
     };
 
     return (
-        <header className="bg-white shadow-sm top-0 z-50 sticky">
+        <header className="bg-gray-100 shadow-sm top-0 z-50 sticky">
             {/* 
                 Сетка для десктопа (3 колонки):
                 1. Левая: [50px] - Фиксирована под логотип (как в футере)

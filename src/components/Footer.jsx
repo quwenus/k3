@@ -2,7 +2,7 @@ import logo from '../../src/assets/img/logo-green.svg';
 
 const Footer = () => {
     return (
-        <footer className=" bg-gray-300/20 w-full shadow-sm">
+        <footer className=" bg-gray-100 w-full shadow-sm">
             <div className="container mx-auto px-4 py-5 flex justify-between items-center gap-4 ">
                 <div className="shrink-0 ">
                     <a href="/"><img src={logo} alt="K3" className="max-w-10 sm:max-w-15 " /></a>

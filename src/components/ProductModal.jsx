@@ -5,10 +5,10 @@ import { IoClose, IoChevronDown, IoChevronUp } from 'react-icons/io5'; // Доб
 const ProductModal = ({ product, onClose }) => {
     if (!product) return null;
 
-    const { 
-        sku, 
-        title, 
-        oem_numbers, 
+    const {
+        sku,
+        title,
+        oem_numbers,
         price,
         compatible_cars,
         images
@@ -38,12 +38,12 @@ const ProductModal = ({ product, onClose }) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-            
-            <div 
+
+            <div
                 className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]"
-                onClick={(e) => e.stopPropagation()} 
+                onClick={(e) => e.stopPropagation()}
             >
-                
+
                 {/* Шапка */}
                 <div className="flex justify-between items-center p-4 border-b bg-gray-50 shrink-0">
                     <h2 className="text-xl font-bold text-gray-800">Подробная информация</h2>
@@ -54,13 +54,13 @@ const ProductModal = ({ product, onClose }) => {
 
                 {/* Тело с прокруткой */}
                 <div className="p-6 overflow-y-auto custom-scrollbar grow">
-                    
+
                     {/* Изображение */}
                     <div className="w-full h-full mb-6 overflow-hidden rounded-xl bg-gray-100 shadow-inner">
-                        <img 
+                        <img
                             src={imageUrl}
-                            alt={title} 
-                            className="w-full h-full object-cover" 
+                            alt={title}
+                            className="w-full h-full object-cover"
                         />
                     </div>
 
@@ -90,7 +90,7 @@ const ProductModal = ({ product, onClose }) => {
                         </div> */}
                         <div>
                             <p className="text-xs text-gray-500 uppercase font-semibold">Тип</p>
-                            <p className="font-medium text-gray-800">Дисковые</p> 
+                            <p className="font-medium text-gray-800">Дисковые</p>
                         </div>
                     </div>
 
@@ -99,7 +99,9 @@ const ProductModal = ({ product, onClose }) => {
                         <div className="mb-6">
                             <p className="text-sm font-semibold text-gray-700 mb-1">Оригинальные номера (OEM):</p>
                             <p className="text-sm text-gray-600 font-mono bg-gray-100 p-2 rounded border border-gray-200 break-all">
-                                {oem_numbers}
+                                {Array.isArray(oem_numbers)
+                                    ? oem_numbers.join(', ')
+                                    : oem_numbers}
                             </p>
                         </div>
                     )}
@@ -108,12 +110,12 @@ const ProductModal = ({ product, onClose }) => {
                     {compatible_cars && (
                         <div className="mb-6 border border-blue-100 rounded-lg overflow-hidden ">
                             {/* Кнопка-заголовок */}
-                            <button 
+                            <button
                                 onClick={() => setIsCompatibilityOpen(!isCompatibilityOpen)}
                                 className="w-full flex items-center justify-between p-3 bg-blue-50 hover:bg-blue-100 transition-colors text-left"
                             >
-                                <span className="text-sm font-semibold text-blue-900 ">
-                                    Применяемость ({compatible_cars.split('; ').length} авто)
+                                <span className="text-sm font-semibold text-blue-900">
+                                    Применяемость ({compatible_cars.length} авто)
                                 </span>
                                 {isCompatibilityOpen ? <IoChevronUp /> : <IoChevronDown />}
                             </button>
@@ -123,7 +125,7 @@ const ProductModal = ({ product, onClose }) => {
                                 <div className="p-3 bg-white border-t border-blue-100 animate-fade-in-down">
                                     <ul className="list-disc list-inside space-y-1">
                                         {/* Разбиваем строку "Toyota Camry; BMW X5" на массив и выводим списком */}
-                                        {compatible_cars.split('; ').map((car, index) => (
+                                        {compatible_cars.map((car, index) => (
                                             <li key={index} className="text-sm text-gray-700 pl-2">
                                                 {car}
                                             </li>

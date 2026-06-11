@@ -42,61 +42,114 @@ const pool = sql.createPool({
     }
 })();
 
+// app.get('/api/products', async (req, res) => {
+//     res.json({ ok: true });
+// });
+
 app.get('/api/products', async (req, res) => {
-    const { category_slug } = req.query; // Ожидаем: /api/products?category_slug=car
+    const { category_slug } = req.query;
 
     try {
         let query = `
-            SELECT 
-                k3.number AS sku,                
-                k3.title,                         
-                p.price,
-                c.name AS category_name,
-                
-                GROUP_CONCAT(DISTINCT oem.number SEPARATOR ', ') AS oem_numbers,
-                GROUP_CONCAT(DISTINCT CONCAT(cb.name, ' ', cm.name) SEPARATOR '; ') AS compatible_cars,
+            SELECT
+                p.id,
 
-                (
-                    SELECT COALESCE(
-                        JSON_ARRAYAGG(
+                k3.number AS sku,
+                k3.title,
+
+                p.price,
+
+                c.id AS category_id,
+                c.name AS category_name,
+                c.slug AS category_slug,
+
+                COALESCE(
+                    (
+                        SELECT JSON_ARRAYAGG(o.number)
+                        FROM oem_numbers o
+                        WHERE o.k3_id = k3.id
+                    ),
+                    JSON_ARRAY()
+                ) AS oem_numbers,
+
+                COALESCE(
+                    (
+                        SELECT JSON_ARRAYAGG(
+                            CONCAT(cb.name, ' ', cm.name)
+                        )
+                        FROM model_compatibility mc
+                        JOIN car_models cm
+                            ON cm.id = mc.model_id
+                        JOIN car_brands cb
+                            ON cb.id = cm.brand_id
+                        WHERE mc.k3_id = k3.id
+                    ),
+                    JSON_ARRAY()
+                ) AS compatible_cars,
+
+                COALESCE(
+                    (
+                        SELECT JSON_ARRAYAGG(
                             JSON_OBJECT(
                                 'id', pi.id,
                                 'file_path', pi.file_path,
                                 'is_main', pi.is_main,
                                 'sort_order', pi.sort_order
                             )
-                        ),
-                        JSON_ARRAY()
-                    )
-                    FROM product_images pi
-                    WHERE pi.product_id = p.id
+                        )
+                        FROM product_images pi
+                        WHERE pi.product_id = p.id
+                    ),
+                    JSON_ARRAY()
                 ) AS images
 
             FROM products p
-            JOIN k3_numbers k3 ON p.k3_id = k3.id
-            JOIN categories c ON k3.category_id = c.id
-            LEFT JOIN oem_numbers oem ON k3.id = oem.k3_id
-            LEFT JOIN model_compatibility mc ON mc.k3_id = k3.id
-            LEFT JOIN car_models cm ON mc.model_id = cm.id
-            LEFT JOIN car_brands cb ON cm.brand_id = cb.id
+
+            JOIN k3_numbers k3
+                ON p.k3_id = k3.id
+
+            JOIN categories c
+                ON p.category_id = c.id
         `;
 
         const queryParams = [];
+
         if (category_slug) {
             query += ` WHERE c.slug = ?`;
             queryParams.push(category_slug);
         }
 
-        query += ` GROUP BY p.id, k3.number, k3.title, p.price, c.name ORDER BY p.id ASC`;
+        query += ` ORDER BY p.id ASC`;
 
         const [rows] = await pool.query(query, queryParams);
 
-        // ... (ваша текущая логика обработки изображений остается без изменений)
+        // mysql2 иногда возвращает JSON как строки
+        const data = rows.map(product => ({
+            ...product,
 
-        res.json({ data: rows });
+            oem_numbers:
+                typeof product.oem_numbers === 'string'
+                    ? JSON.parse(product.oem_numbers)
+                    : product.oem_numbers,
+
+            compatible_cars:
+                typeof product.compatible_cars === 'string'
+                    ? JSON.parse(product.compatible_cars)
+                    : product.compatible_cars,
+
+            images:
+                typeof product.images === 'string'
+                    ? JSON.parse(product.images)
+                    : product.images
+        }));
+
+        res.json({ data });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: 'Error fetching products' });
+
+        res.status(500).json({
+            message: 'Error fetching products'
+        });
     }
 });
 

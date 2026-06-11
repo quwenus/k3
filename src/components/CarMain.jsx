@@ -9,7 +9,7 @@ const CarMain = ({ categorySlug, title }) => {
 
     useEffect(() => {
         // Запрос к API с использованием переданного slug
-        fetch(`/api/products?category_slug=${categorySlug}`)
+        fetch('/api/products?category_slug=car')
             .then(res => res.json())
             .then(response => {
                 setProducts(response.data || []);

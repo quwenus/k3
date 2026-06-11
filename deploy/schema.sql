@@ -55,9 +55,9 @@ CREATE TABLE IF NOT EXISTS product_images (
     file_path VARCHAR(255) NOT NULL,
     is_main BOOLEAN DEFAULT FALSE,
     sort_order INT DEFAULT 0,
+
+    UNIQUE KEY product_image_idx (product_id, file_path),
+
     FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
 );
 
-
-ALTER TABLE product_images
-ADD UNIQUE KEY product_image_idx (product_id, file_path);

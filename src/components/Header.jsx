@@ -75,7 +75,7 @@ const Header = () => {
                             </a>
                         </li>
                         <li><a href="/catalog" className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">Каталог</a></li>
-                        <li><a href="#" className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">Сотрудничество</a></li>
+                        {/* <li><a href="#" className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">Сотрудничество</a></li> */}
                         <li>
                             <a href="/warranty" className="hover:text-green-600 transition-colors lg:text-lg xl:text-xl">Гарантии</a>
                         </li>
@@ -117,7 +117,7 @@ const Header = () => {
                     <li><a href="/" onClick={() => { navigate('/'); closeMenu(); }} className="hover:text-green-600 transition-colors text-lg">Главная</a></li>
                     <li><a href="/#about" onClick={(e) => scrollToSection(e, 'about', '/')} className="hover:text-green-600 transition-colors text-lg">О нас</a></li>
                     <li><a href="/catalog" onClick={closeMenu} className="hover:text-green-600 transition-colors text-lg">Каталог</a></li>
-                    <li><a href="#" onClick={closeMenu} className="hover:text-green-600 transition-colors text-lg">Сотрудничество</a></li>
+                    {/* <li><a href="#" onClick={closeMenu} className="hover:text-green-600 transition-colors text-lg">Сотрудничество</a></li> */}
                     <li><a href="/warranty" onClick={closeMenu} className="hover:text-green-600 transition-colors text-lg">Гарантии</a></li>
                     <li className="pt-2 border-t mt-2">
                         <a href="mailto:info@k3-parts.ru" className="text-green-600 font-bold">info@k3-parts.ru</a>

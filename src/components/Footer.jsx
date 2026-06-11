@@ -26,7 +26,7 @@ const Footer = () => {
                                 О нас
                             </a></li>
                             <li><a href="/catalog" className="hover:text-green-600 transition-colors">Каталог</a></li>
-                            <li><a href="#" className="hover:text-green-600 transition-colors">Сотрудничество</a></li>
+                            {/* <li><a href="#" className="hover:text-green-600 transition-colors">Сотрудничество</a></li> */}
                             <li><a href="/warranty" className="hover:text-green-600 transition-colors">Гарантии</a></li>
                         </ul>
                     </nav>

@@ -55,7 +55,7 @@ const ProductCard = ({ product, onOpenModal }) => {
                 
                 {oem_numbers && (
                     <p className="text-[10px] text-gray-500 mb-2 truncate" title={oem_numbers}>
-                        OEM: {oem_numbers}
+                        OEM: {oem_numbers.join(', ')}
                     </p>
                 )}
 

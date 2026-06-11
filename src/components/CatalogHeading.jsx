@@ -3,7 +3,7 @@ import ChooseCategory from "./ChooseCategory"
 const CatalogHeading = () => {
     return (
         <section>
-            <div className="container mx-auto px-4 flex flex-col">
+            <div className="container mx-auto px-4 flex flex-col h-full">
                 <div className="self-center my-10">
                     <h1 className="uppercase font-semibold text-3xl" >Каталог колодок</h1>
                 </div>

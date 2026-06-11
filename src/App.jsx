@@ -12,21 +12,22 @@ import CatalogCarPage from "./pages/CatalogCarPage"
 
 const App = () => {
   return (
-    <section>
+    <div className="min-h-dvh flex flex-col">
       <ErrTablet />
+
       <Header />
 
-      <>
+      <main className="flex-1">
         <Routes>
-          <Route path="/" element={<MainPage />}></Route>
-          <Route path="/warranty" element={<WarrantyPage />}></Route>
-          <Route path="/catalog" element={<CatalogPage />}></Route>
-          <Route path="/catalog/car" element={<CatalogCarPage />}></Route>
+          <Route path="/" element={<MainPage />} />
+          <Route path="/warranty" element={<WarrantyPage />} />
+          <Route path="/catalog" element={<CatalogPage />} />
+          <Route path="/catalog/car" element={<CatalogCarPage />} />
         </Routes>
-      </>
+      </main>
 
       <Footer />
-    </section>
+    </div>
   )
 }
 

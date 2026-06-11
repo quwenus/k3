@@ -50,7 +50,7 @@ const ChooseCategory = () => {
             >
 
                 <img
-                    src={moto} // <-- ЗАМЕНИТЕ НА КАРТИНКУ МОТОЦИКЛОВ
+                    src={moto} 
                     alt="Мотоциклы"
                     className="absolute inset-0 self-center object-cover transition-transform duration-700 group-hover:scale-105"
                 />

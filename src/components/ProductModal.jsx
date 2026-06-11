@@ -122,7 +122,7 @@ const ProductModal = ({ product, onClose }) => {
 
                             {/* Раскрывающийся контент */}
                             {isCompatibilityOpen && (
-                                <div className="p-3 bg-white border-t border-blue-100 animate-fade-in-down">
+                                <div className="p-3 bg-white border-t border-blue-100 animate-fade-in-down cursor-pointer">
                                     <ul className="list-disc list-inside space-y-1">
                                         {/* Разбиваем строку "Toyota Camry; BMW X5" на массив и выводим списком */}
                                         {compatible_cars.map((car, index) => (

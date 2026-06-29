@@ -105,3 +105,9 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_users_login (login),
     INDEX idx_users_phone (phone)
 );
+
+CREATE TABLE IF NOT EXISTS admin_table (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    login VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL
+)

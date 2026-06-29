@@ -113,7 +113,7 @@
           DB_USER=admin
           DB_PASSWORD=shpR1CQtunMLsNPE
           DB_NAME=k3_parts
-          JWT_SECRET=super_secret_key_for_future
+          JWT_SECRET=YOUR_SECRET_KEY
           NODE_ENV=production
         owner: www-data
         group: www-data

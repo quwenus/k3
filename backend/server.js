@@ -5,6 +5,7 @@ import cors from 'cors';
 import sql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import path from 'path';
+import bcrypt from 'bcrypt';
 import { fileURLToPath } from 'url';
 
 
@@ -42,9 +43,52 @@ const pool = sql.createPool({
     }
 })();
 
-// app.get('/api/products', async (req, res) => {
-//     res.json({ ok: true });
-// });
+app.post('/api/admin/', async (req, res) => {
+    try {
+        const { login, password } = req.body;
+
+        const hashPassword = await bcrypt.hash(password, 10); // Хэшируем пароль
+
+        const [rows] = await pool.query(
+            'INSERT INTO admin_table (login, password) VALUES (?, ?) ON DUPLICATE KEY UPDATE password = VALUES(password)',
+            [login, hashPassword]
+        );
+        res.json({ success: true, message: 'Admin user created/updated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({
+            message: 'Error creating/updating admin user'
+        });
+    }
+});
+
+app.post('/api/admin/login', async (req, res) => {
+    try {
+        const { login, password } = req.body;
+
+        const [rows] = await pool.query(
+            'SELECT * FROM admin_table WHERE login = ?',
+            [login]
+        );
+
+        if (rows.length > 0) {
+            const isMatch = await bcrypt.compare(password, rows[0].password);
+            if (isMatch) {
+                res.json({ success: true, message: 'Login successful' });
+            } else {
+                res.status(401).json({ success: false, message: 'Invalid credentials' });
+            }
+        } else {
+            res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({
+            message: 'Error during login'
+        });
+    }
+});
+
 
 app.get('/api/products', async (req, res) => {
     const { category_slug } = req.query;

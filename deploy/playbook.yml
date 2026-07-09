@@ -75,6 +75,8 @@
         - /var/www/k3-app
         - /var/www/k3-app/frontend
         - /var/www/k3-app/backend
+        - /var/www/k3-app/uploads
+        - /var/www/k3-app/uploads/img
 
     - name: Copy frontend build files
       ansible.builtin.copy:
@@ -87,7 +89,7 @@
     - name: Copy frontend product images
       ansible.builtin.copy:
         src: ../src/assets/img/
-        dest: /var/www/k3-app/frontend/assets/img/
+        dest: /var/www/k3-app/uploads/img/
         owner: www-data
         group: www-data
         mode: '0755'
@@ -113,7 +115,15 @@
           DB_USER=admin
           DB_PASSWORD=shpR1CQtunMLsNPE
           DB_NAME=k3_parts
-          JWT_SECRET=YOUR_SECRET_KEY
+          JWT_SECRET=143d67e4f1ef4f5e8ddb02757b1d69d1148c18ab15b576e1b01a18d5cda0d994dc62c68eb6551fe3ec3fc6926806ebb02080c3e5ba015d2d824f8dcd4910ea0c
+          ORDER_RECIPIENT_EMAIL=info@k3-parts.ru
+          SMTP_HOST=
+          SMTP_PORT=465
+          SMTP_SECURE=true
+          SMTP_USER=
+          SMTP_PASS=
+          SMTP_FROM=
+          UPLOAD_DIR=/var/www/k3-app/uploads/img
           NODE_ENV=production
         owner: www-data
         group: www-data

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const AdminCreate = () => {
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         login: "",
         password: ""
@@ -30,7 +31,6 @@ const AdminCreate = () => {
             const data = await response.json();
             console.log('Data from server:', data);
 
-            const navigate = useNavigate();
             navigate('/admin/login'); // Перенаправление на страницу входа после успешного создания администратора
 
         } catch (error) {

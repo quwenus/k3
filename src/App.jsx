@@ -1,5 +1,4 @@
 import { Routes, Route } from "react-router-dom"
-import { useEffect } from "react"
 
 import Header from "./components/Header"
 import Footer from "./components/Footer"
@@ -9,6 +8,7 @@ import MainPage from "./pages/MainPage"
 import WarrantyPage from "./pages/WarrantyPage"
 import CatalogPage from "./pages/CatalogPage"
 import CatalogCarPage from "./pages/CatalogCarPage"
+import CatalogMotoPage from "./pages/CatalogMotoPage"
 
 import AdminCreate from "./components/AdminCreate" 
 import AdminPanel from "./components/AdminPanel"
@@ -26,6 +26,7 @@ const MainLayout = () => {
           <Route path="/warranty" element={<WarrantyPage />} />
           <Route path="/catalog" element={<CatalogPage />} />
           <Route path="/catalog/car" element={<CatalogCarPage />} />
+          <Route path="/catalog/moto" element={<CatalogMotoPage />} />
           {/* Поймает все остальные неизвестные страницы */}
           <Route path="*" element={<MainPage />} /> 
         </Routes>

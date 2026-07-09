@@ -1,7 +1,7 @@
 import { IoIosArrowBack } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
 
-const CarHeading = () => {
+const CarHeading = ({ title = "Автомобильные колодки" }) => {
     const navigate = useNavigate();
 
     const goBack = () => {
@@ -22,7 +22,7 @@ const CarHeading = () => {
 
                 <div className="w-full text-center ml-12 md:ml-0">
                     <h1 className="uppercase font-bold text-2xl sm:text-3xl md:text-4xl text-gray-900 leading-tight wrap-break-word">
-                        Автомобильные колодки
+                        {title}
                     </h1>
                 </div>
             </div>

@@ -4,8 +4,8 @@ import CarMain from "../components/CarMain"
 const CatalogCarPage = () => {
     return(
         <section>
-            <CarHeading />
-            <CarMain />
+            <CarHeading title="Автомобильные колодки" />
+            <CarMain categorySlug="car"/>
         </section>
     )
 }

@@ -16,9 +16,9 @@ const Heading = () => {
                         <span className="uppercase font-semibold text-2xl ">европейская надежность по разумной цене</span>
                     </div>
                 </div>
-                <div className='w-full'>
+                {/* <div className='w-full'>
                     <SearchBar />
-                </div>
+                </div> */}
             </div>
         </section>
     )

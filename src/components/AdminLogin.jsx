@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const ADMIN_TOKEN_KEY = "k3AdminToken";
+
 const AdminLogin = () => {
     const [formData, setFormData] = useState({
         login: "",
@@ -19,6 +21,8 @@ const AdminLogin = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        localStorage.removeItem(ADMIN_TOKEN_KEY);
+
         try {
             const response = await fetch('/api/admin/login', {
                 method: 'POST',
@@ -26,13 +30,17 @@ const AdminLogin = () => {
                 body: JSON.stringify(formData)
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+                throw new Error(data.message || `HTTP error! Status: ${response.status}`);
             }
 
-            const data = await response.json();
-            console.log('Data from server:', data);
+            if (!data.token) {
+                throw new Error("Сервер не вернул токен авторизации");
+            }
 
+            localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
 
             navigate('/admin/panel');
 
@@ -52,6 +60,7 @@ const AdminLogin = () => {
                     name="login"
                     value={formData.login}
                     onChange={handleChange}
+                    required
                     className="border"
                 />
             </div>
@@ -63,6 +72,7 @@ const AdminLogin = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
+                    required
                     className="border"
                 />
             </div>

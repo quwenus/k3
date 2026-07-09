@@ -52,14 +52,15 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE TABLE IF NOT EXISTS oem_numbers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     k3_id INT NOT NULL,
-    number VARCHAR(255) NOT NULL,
+    number TEXT NOT NULL,
+    number_hash BINARY(32) GENERATED ALWAYS AS (UNHEX(SHA2(number, 256))) STORED,
 
     FOREIGN KEY (k3_id) REFERENCES k3_numbers (id) ON DELETE CASCADE,
 
-    UNIQUE KEY k3_oem_idx (k3_id, number),
+    UNIQUE KEY k3_oem_idx (k3_id, number_hash),
 
     INDEX idx_oem_numbers_k3_id (k3_id),
-    INDEX idx_oem_numbers_number (number)
+    INDEX idx_oem_numbers_number (number(191))
 );
 
 CREATE TABLE IF NOT EXISTS model_compatibility (

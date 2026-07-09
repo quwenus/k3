@@ -1,9 +1,24 @@
-:80 {
-    root * /var/www/k3-app/frontend
-    
-    route {
-        reverse_proxy /api/* localhost:5001
+(common) {
+    handle_path /assets/img/* {
+        root * /var/www/k3-app/uploads/img
+        file_server
+    }
+
+    handle /api/* {
+        reverse_proxy localhost:5001
+    }
+
+    handle {
+        root * /var/www/k3-app/frontend
         try_files {path} {path}/ /index.html
         file_server
     }
+}
+
+http://194.67.100.233 {
+    import common
+}
+
+k3-parts.ru, www.k3-parts.ru {
+    import common
 }

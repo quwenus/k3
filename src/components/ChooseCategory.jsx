@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import moto from '../../src/assets/img/moto-bg.jpg';
 
 import car from '../../src/assets/img/car-bg.jpg'
@@ -6,14 +6,10 @@ import car from '../../src/assets/img/car-bg.jpg'
 
 const ChooseCategory = () => {
     const navigate = useNavigate();
-    const location = useLocation();
 
     const goTo = (category) => {
         navigate(`/catalog/${category}`);
     };
-
-    const isCarActive = location.pathname === '/catalog/car';
-    const isMotoActive = location.pathname === '/catalog/moto';
 
     // Общий класс для карточки
     const baseCardClass = "relative w-full max-w-2xl min-h-[250px] sm:min-h-[px] rounded-xl overflow-hidden shadow-lg group flex items-center justify-center transition-all duration-300 cursor-pointer";

@@ -5,22 +5,12 @@ import { useState, useEffect } from 'react';
 Modal.setAppElement("#root");
 
 const ErrTablet = () => {
-    const [isOpen, setIsOpen] = useState(null);
+    const [isOpen, setIsOpen] = useState(() => !localStorage.getItem('k3_modal_closed'));
 
     const closeModal = () => {
         setIsOpen(false);
         localStorage.setItem('k3_modal_closed', 'true');
     };
-
-    useEffect(() => {
-        const isClosed = localStorage.getItem('k3_modal_closed');
-        
-        if (!isClosed) {
-            setIsOpen(true);
-        } else {
-            setIsOpen(false);
-        }
-    }, []);
 
     useEffect(() => {
         if (isOpen) {
@@ -32,10 +22,6 @@ const ErrTablet = () => {
             document.body.style.overflow = 'auto';
         };
     }, [isOpen]);
-
-    if (isOpen === null) {
-        return null;
-    }
 
     const customStyles = {
         content: {

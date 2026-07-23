@@ -33,3 +33,4 @@ backups/*.sql.gz
 dist/
 build/
 .DS_Store
+src/assets/img/placeholder.png

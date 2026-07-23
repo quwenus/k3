@@ -1,4 +1,4 @@
-const PLACEHOLDER_IMAGE = '/assets/img/placeholder.png';
+const PLACEHOLDER_IMAGE = '/assets/img/placeholder.jpg';
 
 const isMainImage = (image) => image?.is_main === true
     || image?.is_main === 1

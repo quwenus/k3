@@ -26,6 +26,10 @@ dist-ssr
 
 node_modules/
 .env
+.local/
+backend/.env
+backups/*.sql
+backups/*.sql.gz
 dist/
 build/
 .DS_Store

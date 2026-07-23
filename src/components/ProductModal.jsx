@@ -12,6 +12,7 @@ const ProductModal = ({ product, onClose }) => {
         title,
         oem_numbers,
         price,
+        applicability_text,
         compatible_cars,
         images
     } = product || {};
@@ -21,6 +22,12 @@ const ProductModal = ({ product, onClose }) => {
     const isCompatibilityOpen = compatibilityState.sku === sku ? compatibilityState.isOpen : false;
     const currentImage = sliderImages[activeImageIndex] || sliderImages[0];
     const hasMultipleImages = sliderImages.length > 1;
+    const manualApplicability = String(applicability_text || '').trim();
+    const compatibleCars = Array.isArray(compatible_cars)
+        ? compatible_cars.filter(Boolean)
+        : [];
+    const formattedCompatibility = manualApplicability || compatibleCars.join(', ');
+    const hasCompatibility = Boolean(manualApplicability) || compatibleCars.length > 0;
 
     const formattedPrice = new Intl.NumberFormat('ru-RU').format(price || 0);
 
@@ -63,7 +70,7 @@ const ProductModal = ({ product, onClose }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
 
             <div
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]"
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]"
                 onClick={(e) => e.stopPropagation()}
             >
 
@@ -79,7 +86,7 @@ const ProductModal = ({ product, onClose }) => {
                 <div className="p-6 overflow-y-auto custom-scrollbar grow">
 
                     {/* Изображения */}
-                    <div className="relative mb-6 aspect-[4/3] overflow-hidden rounded-xl bg-gray-100 shadow-inner">
+                    <div className="relative mb-6 aspect-4/3 overflow-hidden rounded-xl bg-gray-100 shadow-inner">
                         <img
                             src={currentImage.file_path}
                             alt={title}
@@ -162,7 +169,7 @@ const ProductModal = ({ product, onClose }) => {
                     {oem_numbers && (
                         <div className="mb-6">
                             <p className="text-sm font-semibold text-gray-700 mb-1">Оригинальные номера (OEM):</p>
-                            <p className="text-sm text-gray-600 font-mono bg-gray-100 p-2 rounded border border-gray-200 break-all">
+                            <p className="max-h-36 overflow-y-auto whitespace-pre-wrap text-sm text-gray-600 font-mono bg-gray-100 p-2 rounded border border-gray-200 wrap-break-word">
                                 {Array.isArray(oem_numbers)
                                     ? oem_numbers.join(', ')
                                     : oem_numbers}
@@ -171,7 +178,7 @@ const ProductModal = ({ product, onClose }) => {
                     )}
 
                     {/* --- ВЫПАДАЮЩИЙ СПИСОК ПРИМЕНЯЕМОСТИ --- */}
-                    {compatible_cars && (
+                    {hasCompatibility && (
                         <div className="mb-6 border border-blue-100 rounded-lg overflow-hidden ">
                             {/* Кнопка-заголовок */}
                             <button
@@ -186,15 +193,10 @@ const ProductModal = ({ product, onClose }) => {
 
                             {/* Раскрывающийся контент */}
                             {isCompatibilityOpen && (
-                                <div className="p-3 bg-white border-t border-blue-100 animate-fade-in-down cursor-pointer">
-                                    <ul className="list-disc list-inside space-y-1">
-                                        {/* Разбиваем строку "Toyota Camry; BMW X5" на массив и выводим списком */}
-                                        {compatible_cars.map((car, index) => (
-                                            <li key={index} className="text-sm text-gray-700 pl-2">
-                                                {car}
-                                            </li>
-                                        ))}
-                                    </ul>
+                                <div className="max-h-80 overflow-y-auto p-3 bg-white border-t border-blue-100 animate-fade-in-down cursor-pointer">
+                                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
+                                        {formattedCompatibility}
+                                    </p>
                                 </div>
                             )}
                         </div>
@@ -209,9 +211,9 @@ const ProductModal = ({ product, onClose }) => {
                         <p className="text-xs text-gray-500">Цена за комплект</p>
                         <p className="text-2xl font-bold text-green-600">{formattedPrice} ₽</p>
                     </div>
-                    {/* <button className="bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors shadow-lg active:scale-95">
+                    <button className="bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors shadow-lg active:scale-95">
                         В корзину
-                    </button> */}
+                    </button>
                 </div>
 
             </div>

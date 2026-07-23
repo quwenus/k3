@@ -17,12 +17,22 @@ const ProductCard = ({ product, onOpenModal }) => {
         sku,
         title,
         oem_numbers,
+        applicability_text,
         compatible_cars,
         images
     } = product;
 
     const productImages = getProductImages(images);
     const imageUrl = productImages[Math.min(imageIndex, productImages.length - 1)]?.file_path || PLACEHOLDER_IMAGE;
+    const formattedOemNumbers = Array.isArray(oem_numbers)
+        ? oem_numbers.join(', ')
+        : oem_numbers;
+    const manualApplicability = String(applicability_text || '').trim();
+    const formattedCompatibility = manualApplicability || (
+        Array.isArray(compatible_cars) && compatible_cars.length > 0
+            ? compatible_cars.join(', ')
+            : ''
+    );
 
     const openMailClientFallback = (phone) => {
         const subject = `Заказ колодок ${sku}`;
@@ -35,7 +45,7 @@ const ProductCard = ({ product, onOpenModal }) => {
             `Телефон для связи: ${phone}`,
             '',
             `OEM: ${Array.isArray(oem_numbers) && oem_numbers.length > 0 ? oem_numbers.join(', ') : 'Не указано'}`,
-            `Применяемость: ${Array.isArray(compatible_cars) && compatible_cars.length > 0 ? compatible_cars.join(', ') : 'Не указано'}`
+            `Применяемость: ${formattedCompatibility || 'Не указано'}`
         ].join('\n');
 
         window.location.href = `mailto:info@k3-parts.ru?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -68,6 +78,7 @@ const ProductCard = ({ product, onOpenModal }) => {
                     product_id: id,
                     sku,
                     customer_phone: trimmedPhone,
+                    applicability_text: formattedCompatibility,
                     oem_numbers,
                     compatible_cars
                 })
@@ -94,14 +105,10 @@ const ProductCard = ({ product, onOpenModal }) => {
         }
     };
 
-    const formattedOemNumbers = Array.isArray(oem_numbers)
-        ? oem_numbers.join(', ')
-        : oem_numbers;
-
     return (
         <div className="bg-white border border-gray-200 rounded-xl p-3 min-w-0
                             shadow-sm hover:shadow-lg transition-all duration-300
-                            flex flex-col h-[420px] group cursor-pointer w-full max-w-60"
+                            flex flex-col h-[450px] group cursor-pointer w-full max-w-60"
             onClick={onOpenModal}>
             <div className="relative mb-3 aspect-square overflow-hidden rounded-lg bg-gray-100 cursor-pointer">
                 <img
@@ -134,8 +141,14 @@ const ProductCard = ({ product, onOpenModal }) => {
                 </div>
 
                 {formattedOemNumbers && (
-                    <p className="text-[10px] text-gray-500 mb-2 wrap-break-words line-clamp-2" title={formattedOemNumbers}>
+                    <p className="text-[10px] text-gray-500 mb-2 wrap-break-words line-clamp-2 whitespace-pre-wrap" title={formattedOemNumbers}>
                         OEM: {formattedOemNumbers}
+                    </p>
+                )}
+
+                {formattedCompatibility && (
+                    <p className="text-[10px] text-gray-500 mb-2 wrap-break-words line-clamp-3 whitespace-pre-wrap" title={formattedCompatibility}>
+                        Применяемость: {formattedCompatibility}
                     </p>
                 )}
 

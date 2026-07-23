@@ -15,6 +15,8 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const frontendDistDir = path.join(__dirname, '..', 'dist');
+const frontendIndexFile = path.join(frontendDistDir, 'index.html');
 
 dotenv.config();
 
@@ -27,6 +29,7 @@ app.use(express.json());
 app.use('/assets', express.static(path.join(__dirname, '..', 'src', 'assets')));
 
 const port = process.env.PORT || 5001;
+const host = process.env.HOST || '0.0.0.0';
 const adminJwtSecret = process.env.JWT_SECRET || 'k3-admin-panel-secret';
 const orderRecipientEmail = process.env.ORDER_RECIPIENT_EMAIL || 'info@k3-parts.ru';
 const defaultUploadDir = fs.existsSync('/var/www/k3-app')
@@ -55,6 +58,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage,
+    limits: {
+        fieldSize: 5 * 1024 * 1024
+    },
     fileFilter: (_req, file, cb) => {
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);
@@ -91,7 +97,7 @@ const removeUploadedFiles = async (filePaths) => {
     await Promise.all(uniqueFilePaths.map(async (filePath) => {
         const fileName = path.basename(filePath);
 
-        if (!fileName || fileName === 'placeholder.png') {
+        if (!fileName || fileName === 'placeholder.jpg') {
             return;
         }
 
@@ -239,6 +245,7 @@ const normalizeProductPayload = (body) => {
         title,
         price,
         category_id,
+        applicability_text = '',
         oem_numbers = '[]',
         compatible_model_ids = '[]'
     } = body;
@@ -248,6 +255,7 @@ const normalizeProductPayload = (body) => {
         title: String(title || '').trim(),
         price: String(price || '').trim(),
         categoryId: parseEntityId(category_id),
+        applicabilityText: String(applicability_text || '').trim(),
         oemNumbers: parseJsonArrayField(oem_numbers).map(item => String(item).trim()).filter(Boolean),
         compatibleModelIds: parseJsonArrayField(compatible_model_ids)
             .map(item => parseEntityId(item))
@@ -378,8 +386,33 @@ const indexUsesColumn = async (tableName, indexName, columnName) => {
     return indexes.length > 0;
 };
 
+const foreignKeyExists = async (tableName, constraintName) => {
+    const [constraints] = await pool.query(
+        `SELECT 1
+        FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+        WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = ?
+            AND CONSTRAINT_NAME = ?
+            AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+        LIMIT 1`,
+        [tableName, constraintName]
+    );
+
+    return constraints.length > 0;
+};
+
 const ensureDatabaseShape = async () => {
     try {
+        const applicabilityTextColumns = await getTableColumns('products', 'applicability_text');
+        if (applicabilityTextColumns.length === 0) {
+            await runSchemaChange(
+                'ALTER TABLE products ADD COLUMN applicability_text MEDIUMTEXT NULL AFTER category_id',
+                ['ER_DUP_FIELDNAME']
+            );
+        } else if (applicabilityTextColumns[0].DATA_TYPE !== 'mediumtext') {
+            await runSchemaChange('ALTER TABLE products MODIFY applicability_text MEDIUMTEXT NULL');
+        }
+
         const numberColumns = await getTableColumns('oem_numbers', 'number');
         if (numberColumns.length === 0) {
             return;
@@ -388,7 +421,7 @@ const ensureDatabaseShape = async () => {
         const hashColumns = await getTableColumns('oem_numbers', 'number_hash');
         const uniqueIndexUsesHash = await indexUsesColumn('oem_numbers', 'k3_oem_idx', 'number_hash');
         const numberIndexUsesNumber = await indexUsesColumn('oem_numbers', 'idx_oem_numbers_number', 'number');
-        const needsMigration = numberColumns[0].DATA_TYPE !== 'text'
+        const needsMigration = numberColumns[0].DATA_TYPE !== 'mediumtext'
             || hashColumns.length === 0
             || !uniqueIndexUsesHash
             || !numberIndexUsesNumber;
@@ -397,15 +430,28 @@ const ensureDatabaseShape = async () => {
             return;
         }
 
+        const k3ForeignKeyName = 'oem_numbers_ibfk_1';
+        if (await foreignKeyExists('oem_numbers', k3ForeignKeyName)) {
+            await runSchemaChange(`ALTER TABLE oem_numbers DROP FOREIGN KEY ${k3ForeignKeyName}`);
+        }
+
         await runSchemaChange('ALTER TABLE oem_numbers DROP INDEX k3_oem_idx', ['ER_CANT_DROP_FIELD_OR_KEY']);
         await runSchemaChange('ALTER TABLE oem_numbers DROP INDEX idx_oem_numbers_number', ['ER_CANT_DROP_FIELD_OR_KEY']);
-        await runSchemaChange('ALTER TABLE oem_numbers MODIFY number TEXT NOT NULL');
+        await runSchemaChange('ALTER TABLE oem_numbers MODIFY number MEDIUMTEXT NOT NULL');
         await runSchemaChange(
             'ALTER TABLE oem_numbers ADD COLUMN number_hash BINARY(32) GENERATED ALWAYS AS (UNHEX(SHA2(number, 256))) STORED',
             ['ER_DUP_FIELDNAME']
         );
         await runSchemaChange('ALTER TABLE oem_numbers ADD UNIQUE KEY k3_oem_idx (k3_id, number_hash)', ['ER_DUP_KEYNAME']);
         await runSchemaChange('ALTER TABLE oem_numbers ADD INDEX idx_oem_numbers_number (number(191))', ['ER_DUP_KEYNAME']);
+        if (!await foreignKeyExists('oem_numbers', k3ForeignKeyName)) {
+            await runSchemaChange(
+                `ALTER TABLE oem_numbers
+                ADD CONSTRAINT ${k3ForeignKeyName}
+                FOREIGN KEY (k3_id) REFERENCES k3_numbers (id) ON DELETE CASCADE`,
+                ['ER_FK_DUP_NAME']
+            );
+        }
     } catch (err) {
         console.error('Database schema check failed:', err.message);
     }
@@ -413,6 +459,7 @@ const ensureDatabaseShape = async () => {
 
 const pool = sql.createPool({
     host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT || 3306),
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
@@ -509,6 +556,7 @@ app.get('/api/products', async (req, res) => {
                 k3.title,
 
                 p.price,
+                p.applicability_text,
 
                 c.id AS category_id,
                 c.name AS category_name,
@@ -627,6 +675,7 @@ app.post('/api/orders', async (req, res) => {
             product_id,
             sku,
             customer_phone,
+            applicability_text = '',
             oem_numbers = [],
             compatible_cars = []
         } = req.body;
@@ -671,7 +720,7 @@ app.post('/api/orders', async (req, res) => {
         const product = rows[0];
         const subject = `Заказ колодок ${product.sku}`;
         const formattedOems = formatList(oem_numbers);
-        const formattedCompatibleCars = formatList(compatible_cars);
+        const formattedCompatibleCars = String(applicability_text || '').trim() || formatList(compatible_cars);
         const text = [
             'Новая заявка на заказ колодок',
             '',
@@ -971,13 +1020,14 @@ app.post('/api/products', requireAdminAuth, uploadImages, async (req, res) => {
         const k3Id = k3Result.insertId;
 
         const [productResult] = await connection.query(
-            `INSERT INTO products (k3_id, price, category_id)
-            VALUES (?, ?, ?)
+            `INSERT INTO products (k3_id, price, category_id, applicability_text)
+            VALUES (?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 price = VALUES(price),
                 category_id = VALUES(category_id),
+                applicability_text = VALUES(applicability_text),
                 id = LAST_INSERT_ID(id)`,
-            [k3Id, productPayload.price, productPayload.categoryId]
+            [k3Id, productPayload.price, productPayload.categoryId, productPayload.applicabilityText]
         );
 
         const productId = productResult.insertId;
@@ -1070,8 +1120,8 @@ app.put('/api/products/:id', requireAdminAuth, uploadImages, async (req, res) =>
         );
 
         await connection.query(
-            'UPDATE products SET price = ?, category_id = ? WHERE id = ?',
-            [productPayload.price, productPayload.categoryId, productId]
+            'UPDATE products SET price = ?, category_id = ?, applicability_text = ? WHERE id = ?',
+            [productPayload.price, productPayload.categoryId, productPayload.applicabilityText, productId]
         );
 
         await saveProductRelations(
@@ -1163,8 +1213,15 @@ app.delete('/api/products/:id', requireAdminAuth, async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Server running on port: ${port}`);
+if (fs.existsSync(frontendIndexFile)) {
+    app.use(express.static(frontendDistDir));
+    app.get(/^(?!\/api(?:\/|$)).*/, (_req, res) => {
+        res.sendFile(frontendIndexFile);
+    });
+}
+
+app.listen(port, host, () => {
+    console.log(`Server running on http://${host}:${port}`);
 });
 
 export { pool };

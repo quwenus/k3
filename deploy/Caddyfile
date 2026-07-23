@@ -9,7 +9,7 @@
     }
 
     handle {
-        root * /var/www/k3-app/frontend
+        root * /var/www/k3-app/frontend-current
         try_files {path} {path}/ /index.html
         file_server
     }

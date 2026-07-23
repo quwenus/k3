@@ -18,7 +18,7 @@ import AdminLogin from "./components/AdminLogin"
 const MainLayout = () => {
   return (
     <div className="min-h-dvh flex flex-col">
-      <ErrTablet />
+      {/* <ErrTablet /> */}
       <Header />
       <main className="flex-1 flex flex-col">
         <Routes>

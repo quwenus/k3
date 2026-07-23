@@ -1,6 +1,9 @@
 - name: Provision and Deploy K3 Application
   hosts: web
   become: yes
+  vars:
+    frontend_release_id: "{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
+    frontend_release_dir: "/var/www/k3-app/releases/frontend/{{ frontend_release_id }}"
   tasks:
     - name: Install system dependencies
       ansible.builtin.apt:
@@ -59,11 +62,6 @@
     - name: Import database seed data
       ansible.builtin.shell: mysql -u admin -pshpR1CQtunMLsNPE k3_parts < /tmp/seed.sql
 
-    - name: Clean remote frontend directory
-      ansible.builtin.file:
-        path: /var/www/k3-app/frontend
-        state: absent
-
     - name: Create directories
       ansible.builtin.file:
         path: "{{ item }}"
@@ -73,18 +71,36 @@
         mode: '0755'
       loop:
         - /var/www/k3-app
-        - /var/www/k3-app/frontend
+        - /var/www/k3-app/releases
+        - /var/www/k3-app/releases/frontend
         - /var/www/k3-app/backend
         - /var/www/k3-app/uploads
         - /var/www/k3-app/uploads/img
 
-    - name: Copy frontend build files
-      ansible.builtin.copy:
-        src: ../dist/
-        dest: /var/www/k3-app/frontend/
+    - name: Create frontend release directory
+      ansible.builtin.file:
+        path: "{{ frontend_release_dir }}"
+        state: directory
         owner: www-data
         group: www-data
         mode: '0755'
+
+    - name: Copy frontend build files
+      ansible.builtin.copy:
+        src: ../dist/
+        dest: "{{ frontend_release_dir }}/"
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Switch frontend release
+      ansible.builtin.file:
+        src: "{{ frontend_release_dir }}"
+        dest: /var/www/k3-app/frontend-current
+        state: link
+        owner: www-data
+        group: www-data
+        force: yes
 
     - name: Copy frontend product images
       ansible.builtin.copy:
@@ -105,6 +121,7 @@
         - package.json
         - package-lock.json
         - server.js
+      notify: Restart backend
 
     - name: Create backend env file
       ansible.builtin.copy:
@@ -128,6 +145,7 @@
         owner: www-data
         group: www-data
         mode: '0600'
+      notify: Restart backend
 
     - name: Install backend dependencies
       ansible.builtin.command:
@@ -151,11 +169,12 @@
         owner: root
         group: root
         mode: '0644'
+      notify: Restart backend
 
-    - name: Start backend service
+    - name: Ensure backend service is running
       ansible.builtin.systemd:
         name: k3-backend
-        state: restarted
+        state: started
         enabled: yes
         daemon_reload: yes
 
@@ -166,9 +185,22 @@
         owner: root
         group: root
         mode: '0644'
+      notify: Reload Caddy
 
-    - name: Restart Caddy
+    - name: Ensure Caddy is running
       ansible.builtin.service:
         name: caddy
-        state: restarted
+        state: started
         enabled: yes
+
+  handlers:
+    - name: Restart backend
+      ansible.builtin.systemd:
+        name: k3-backend
+        state: restarted
+        daemon_reload: yes
+
+    - name: Reload Caddy
+      ansible.builtin.service:
+        name: caddy
+        state: reloaded

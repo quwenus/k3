@@ -28,6 +28,7 @@ const createEmptyProductForm = () => ({
     price: "",
     category_id: "",
     oem_numbers: "",
+    applicability_text: "",
     compatible_model_ids: [],
     existing_images: [],
     deleted_existing_image_ids: [],
@@ -205,6 +206,7 @@ export default function AdminPanel() {
             oem_numbers: Array.isArray(product.oem_numbers) && product.oem_numbers.length > 0
                 ? product.oem_numbers.join("; ")
                 : "",
+            applicability_text: product.applicability_text || "",
             compatible_model_ids: Array.isArray(product.compatible_model_ids)
                 ? product.compatible_model_ids.map(id => String(id))
                 : [],
@@ -277,6 +279,7 @@ export default function AdminPanel() {
         formDataToSend.append("title", productForm.title);
         formDataToSend.append("price", productForm.price);
         formDataToSend.append("category_id", productForm.category_id);
+        formDataToSend.append("applicability_text", productForm.applicability_text);
         formDataToSend.append("oem_numbers", JSON.stringify(oemNumbers));
         formDataToSend.append("compatible_model_ids", JSON.stringify(productForm.compatible_model_ids));
 
@@ -544,17 +547,35 @@ export default function AdminPanel() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">OEM Номера:</label>
+                            <div className="mb-1 flex items-center justify-between gap-3">
+                                <label className="block text-sm font-medium text-gray-700">OEM Номера:</label>
+                                <span className="shrink-0 text-xs text-gray-500">
+                                    {productForm.oem_numbers.length.toLocaleString("ru-RU")} знаков
+                                </span>
+                            </div>
                             <textarea
                                 name="oem_numbers"
                                 value={productForm.oem_numbers}
                                 onChange={handleProductChange}
                                 required
-                                rows={3}
+                                rows={5}
                                 placeholder="8450102948; 1118-3501080"
-                                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                className="w-full p-2.5 text-sm leading-relaxed border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                             />
                             <p className="mt-1 text-sm text-gray-500">Разделяйте номера точкой с запятой.</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Применяемость:</label>
+                            <textarea
+                                name="applicability_text"
+                                value={productForm.applicability_text}
+                                onChange={handleProductChange}
+                                rows={10}
+                                placeholder={"KM1191\nAJP, SPR 240 X, объем 240куб.см, 22-24г.в., перед\nAJP, SPR 310 R, объем 310куб.см, 22-24г.в., перед"}
+                                className="w-full p-2.5 text-sm leading-relaxed border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            />
+                            <p className="mt-1 text-sm text-gray-500">Можно вставлять большой многострочный текст из Word. Переносы строк сохраняются.</p>
                         </div>
 
                         {/* Загрузка картинок */}

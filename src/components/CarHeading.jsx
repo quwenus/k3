@@ -5,7 +5,7 @@ const CarHeading = ({ title = "Автомобильные колодки" }) => 
     const navigate = useNavigate();
 
     const goBack = () => {
-        navigate(-1);
+        navigate('/catalog');
     };
 
     return (

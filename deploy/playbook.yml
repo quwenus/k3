@@ -4,6 +4,7 @@
   vars:
     frontend_release_id: "{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
     frontend_release_dir: "/var/www/k3-app/releases/frontend/{{ frontend_release_id }}"
+    sync_product_images: false
   tasks:
     - name: Install system dependencies
       ansible.builtin.apt:
@@ -102,13 +103,14 @@
         group: www-data
         force: yes
 
-    - name: Copy frontend product images
+    - name: Optionally copy product images
       ansible.builtin.copy:
         src: ../src/assets/img/
         dest: /var/www/k3-app/uploads/img/
         owner: www-data
         group: www-data
         mode: '0755'
+      when: sync_product_images | bool
 
     - name: Copy backend files
       ansible.builtin.copy:

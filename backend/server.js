@@ -312,6 +312,36 @@ const replaceProductImages = async (connection, productId, files) => {
     return oldImages.map(image => image.file_path);
 };
 
+const appendProductImages = async (connection, productId, files) => {
+    if (!files?.length) {
+        return;
+    }
+
+    const [[imageState]] = await connection.query(
+        `SELECT
+            COALESCE(MAX(sort_order), -1) AS max_sort_order,
+            SUM(CASE WHEN is_main THEN 1 ELSE 0 END) AS main_count
+        FROM product_images
+        WHERE product_id = ?`,
+        [productId]
+    );
+
+    const startOrder = Number(imageState?.max_sort_order ?? -1) + 1;
+    const hasMainImage = Number(imageState?.main_count || 0) > 0;
+
+    for (const [index, file] of files.entries()) {
+        await connection.query(
+            'INSERT INTO product_images (product_id, file_path, is_main, sort_order) VALUES (?, ?, ?, ?)',
+            [
+                productId,
+                `/assets/img/${file.filename}`,
+                !hasMainImage && index === 0,
+                startOrder + index
+            ]
+        );
+    }
+};
+
 const updateProductImageChanges = async (connection, productId, imageChanges) => {
     const [currentImages] = await connection.query(
         'SELECT id, file_path FROM product_images WHERE product_id = ?',
@@ -1131,7 +1161,15 @@ app.put('/api/products/:id', requireAdminAuth, uploadImages, async (req, res) =>
             productPayload.compatibleModelIds
         );
 
-        if (req.files?.length) {
+        if (Object.hasOwn(req.body, 'existing_images')) {
+            oldImagePaths = await updateProductImageChanges(
+                connection,
+                productId,
+                parseProductImageChanges(req.body.existing_images)
+            );
+
+            await appendProductImages(connection, productId, req.files);
+        } else if (req.files?.length) {
             oldImagePaths = await replaceProductImages(connection, productId, req.files);
         }
 

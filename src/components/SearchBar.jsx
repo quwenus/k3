@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import SearchCategory from './SearchCategory';
+import { useNavigate } from 'react-router-dom';
 
 const SearchBar = () => {
+    const navigate = useNavigate();
     const [query, setQuery] = useState('');
+    const [category, setCategory] = useState('car');
 
     const handleSearch = () => {
-        if (query.trim()) {
-            console.log('Ищем:', query);
-            // Здесь будет вызов вашей функции поиска
-        }
+        const trimmedQuery = query.trim();
+        const search = trimmedQuery ? `?q=${encodeURIComponent(trimmedQuery)}` : '';
+
+        navigate(`/catalog/${category}${search}`);
     };
 
     const handleKeyDown = (e) => {
@@ -24,9 +26,26 @@ const SearchBar = () => {
                 Быстрый <span className="font-extrabold">поиск</span>
             </h2>
 
-            <p className="text-gray-500 mb-6 text-sm">
+            <p className="text-gray-500 mb-4 text-sm">
                 Быстрый поиск по модели или номеру детали
             </p>
+
+            <div className="mb-4 grid grid-cols-2 gap-2 rounded-full bg-white p-1 text-sm">
+                <button
+                    type="button"
+                    onClick={() => setCategory('car')}
+                    className={`rounded-full px-4 py-2 transition-colors ${category === 'car' ? 'bg-green-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
+                >
+                    Авто
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setCategory('moto')}
+                    className={`rounded-full px-4 py-2 transition-colors ${category === 'moto' ? 'bg-green-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
+                >
+                    Мото
+                </button>
+            </div>
 
             <div className="relative items-center w-full flex">
 
@@ -48,8 +67,6 @@ const SearchBar = () => {
                     ПОИСК
                 </button>
             </div>
-            {/* <div className='border-[0.5px] my-6 border-gray-200'></div> */}
-            {/* <SearchCategory /> */}
         </div>
     );
 };

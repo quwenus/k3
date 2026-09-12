@@ -10,6 +10,7 @@ import multer from 'multer';
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
+import zlib from 'zlib';
 import { fileURLToPath } from 'url';
 
 
@@ -85,6 +86,37 @@ const uploadImages = (req, res, next) => {
     });
 };
 
+const docxUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024
+    },
+    fileFilter: (_req, file, cb) => {
+        const ext = path.extname(file.originalname || '').toLowerCase();
+
+        if (ext === '.docx') {
+            cb(null, true);
+            return;
+        }
+
+        cb(new Error('Only .docx files are allowed'));
+    }
+});
+
+const uploadApplicabilityDocx = (req, res, next) => {
+    docxUpload.single('docx')(req, res, (err) => {
+        if (err) {
+            console.error(err);
+            res.status(400).json({
+                message: err.message || 'Error uploading DOCX file'
+            });
+            return;
+        }
+
+        next();
+    });
+};
+
 const parseEntityId = (id) => {
     const numericId = Number(id);
 
@@ -140,7 +172,7 @@ const requireAdminAuth = (req, res, next) => {
 };
 
 const getOrderTransporter = () => {
-    if (!process.env.SMTP_HOST) {
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
         return null;
     }
 
@@ -148,6 +180,9 @@ const getOrderTransporter = () => {
         host: process.env.SMTP_HOST,
         port: Number(process.env.SMTP_PORT || 465),
         secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : Number(process.env.SMTP_PORT || 465) === 465,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
         auth: process.env.SMTP_USER && process.env.SMTP_PASS
             ? {
                 user: process.env.SMTP_USER,
@@ -157,20 +192,181 @@ const getOrderTransporter = () => {
     });
 };
 
-const formatList = (items) => {
-    if (!Array.isArray(items) || items.length === 0) {
-        return 'Не указано';
-    }
-
-    return items.filter(Boolean).join(', ') || 'Не указано';
-};
-
 const escapeHtml = (value) => String(value)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+
+const formatMultilineHtml = (value) => escapeHtml(value).replace(/\r?\n/g, '<br>');
+
+const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+const decodeXmlText = (value) => String(value || '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&');
+
+const stripApplicabilityMarkers = (value) => String(value || '')
+    .trim()
+    .replace(/\[\/?big\]/g, '')
+    .replace(/\[\/?small\]/g, '')
+    .replace(/\*\*/g, '')
+    .replace(/^#{1,3}\s+/, '')
+    .trim();
+
+const isApplicabilityTitleLine = (line, fileName = '') => {
+    const cleanLine = stripApplicabilityMarkers(line);
+    const fileStem = path.basename(fileName || '', path.extname(fileName || ''));
+
+    return cleanLine.toLowerCase() === fileStem.toLowerCase()
+        || /^[A-ZА-Я]{1,4}\d+[A-ZА-Я0-9-]*$/i.test(cleanLine);
+};
+
+const findZipEntry = (archiveBuffer, entryName) => {
+    const eocdSignature = 0x06054b50;
+    const centralHeaderSignature = 0x02014b50;
+    const localHeaderSignature = 0x04034b50;
+    const searchStart = Math.max(0, archiveBuffer.length - 0xffff - 22);
+    let eocdOffset = -1;
+
+    for (let index = archiveBuffer.length - 22; index >= searchStart; index -= 1) {
+        if (archiveBuffer.readUInt32LE(index) === eocdSignature) {
+            eocdOffset = index;
+            break;
+        }
+    }
+
+    if (eocdOffset === -1) {
+        throw new Error('DOCX archive is invalid');
+    }
+
+    const entryCount = archiveBuffer.readUInt16LE(eocdOffset + 10);
+    let centralOffset = archiveBuffer.readUInt32LE(eocdOffset + 16);
+
+    for (let entryIndex = 0; entryIndex < entryCount; entryIndex += 1) {
+        if (archiveBuffer.readUInt32LE(centralOffset) !== centralHeaderSignature) {
+            throw new Error('DOCX central directory is invalid');
+        }
+
+        const compressionMethod = archiveBuffer.readUInt16LE(centralOffset + 10);
+        const compressedSize = archiveBuffer.readUInt32LE(centralOffset + 20);
+        const fileNameLength = archiveBuffer.readUInt16LE(centralOffset + 28);
+        const extraLength = archiveBuffer.readUInt16LE(centralOffset + 30);
+        const commentLength = archiveBuffer.readUInt16LE(centralOffset + 32);
+        const localHeaderOffset = archiveBuffer.readUInt32LE(centralOffset + 42);
+        const fileName = archiveBuffer
+            .subarray(centralOffset + 46, centralOffset + 46 + fileNameLength)
+            .toString('utf8');
+
+        if (fileName === entryName) {
+            if (archiveBuffer.readUInt32LE(localHeaderOffset) !== localHeaderSignature) {
+                throw new Error('DOCX local file header is invalid');
+            }
+
+            const localFileNameLength = archiveBuffer.readUInt16LE(localHeaderOffset + 26);
+            const localExtraLength = archiveBuffer.readUInt16LE(localHeaderOffset + 28);
+            const dataStart = localHeaderOffset + 30 + localFileNameLength + localExtraLength;
+            const compressedData = archiveBuffer.subarray(dataStart, dataStart + compressedSize);
+
+            if (compressionMethod === 0) {
+                return compressedData;
+            }
+
+            if (compressionMethod === 8) {
+                return zlib.inflateRawSync(compressedData);
+            }
+
+            throw new Error(`Unsupported DOCX compression method: ${compressionMethod}`);
+        }
+
+        centralOffset += 46 + fileNameLength + extraLength + commentLength;
+    }
+
+    throw new Error(`DOCX entry not found: ${entryName}`);
+};
+
+const extractDocxParagraphs = (docxBuffer) => {
+    const documentXml = findZipEntry(docxBuffer, 'word/document.xml').toString('utf8');
+    const paragraphs = [];
+    const paragraphPattern = /<w:p\b[\s\S]*?<\/w:p>/g;
+    const textTokenPattern = /<w:t\b[^>]*>([\s\S]*?)<\/w:t>|<w:tab\b[^>]*\/>|<w:(?:br|cr)\b[^>]*\/>/g;
+    const paragraphMatches = documentXml.match(paragraphPattern) || [];
+
+    for (const paragraphXml of paragraphMatches) {
+        const pieces = [];
+        let match;
+
+        while ((match = textTokenPattern.exec(paragraphXml)) !== null) {
+            if (match[1] !== undefined) {
+                pieces.push(decodeXmlText(match[1]));
+            } else if (match[0].startsWith('<w:tab')) {
+                pieces.push('\t');
+            } else {
+                pieces.push('\n');
+            }
+        }
+
+        const paragraphText = pieces.join('').trim();
+
+        if (paragraphText) {
+            paragraphs.push(
+                ...paragraphText
+                    .split(/\r?\n/)
+                    .map(line => line.trim())
+                    .filter(Boolean)
+            );
+        }
+    }
+
+    return paragraphs;
+};
+
+const formatApplicabilityLines = (lines, fileName = '') => {
+    const groups = new Map();
+    const looseLines = [];
+
+    for (const line of lines) {
+        if (isApplicabilityTitleLine(line, fileName)) {
+            continue;
+        }
+
+        const commaIndex = line.indexOf(',');
+
+        if (commaIndex === -1) {
+            looseLines.push(stripApplicabilityMarkers(line));
+            continue;
+        }
+
+        const brand = stripApplicabilityMarkers(line.slice(0, commaIndex));
+        const modelText = line.slice(commaIndex + 1).trim();
+
+        if (!brand || !modelText) {
+            looseLines.push(stripApplicabilityMarkers(line));
+            continue;
+        }
+
+        if (!groups.has(brand)) {
+            groups.set(brand, []);
+        }
+
+        groups.get(brand).push(modelText);
+    }
+
+    const formattedLines = [];
+
+    for (const [brand, models] of groups.entries()) {
+        formattedLines.push(`**${brand}**`);
+        formattedLines.push(...models);
+    }
+
+    formattedLines.push(...looseLines);
+
+    return formattedLines.join('\n').trim();
+};
 
 const parseJsonArrayField = (value) => {
     if (Array.isArray(value)) {
@@ -573,6 +769,27 @@ app.get('/api/admin/session', requireAdminAuth, (req, res) => {
     });
 });
 
+app.post('/api/applicability/format-docx', requireAdminAuth, uploadApplicabilityDocx, (req, res) => {
+    try {
+        if (!req.file?.buffer) {
+            return res.status(400).json({ message: 'DOCX file is required' });
+        }
+
+        const lines = extractDocxParagraphs(req.file.buffer);
+        const text = formatApplicabilityLines(lines, req.file.originalname);
+
+        res.json({
+            text,
+            lineCount: text ? text.split(/\r?\n/).length : 0
+        });
+    } catch (err) {
+        console.error('Error formatting applicability DOCX:', err);
+        res.status(400).json({
+            message: err.message || 'Error formatting DOCX file'
+        });
+    }
+});
+
 
 app.get('/api/products', async (req, res) => {
     const { category_slug } = req.query;
@@ -704,16 +921,27 @@ app.post('/api/orders', async (req, res) => {
         const {
             product_id,
             sku,
+            customer_name,
             customer_phone,
-            applicability_text = '',
-            oem_numbers = [],
-            compatible_cars = []
+            customer_email,
+            customer_message
         } = req.body;
 
+        const name = String(customer_name || '').trim();
         const phone = String(customer_phone || '').trim();
+        const email = String(customer_email || '').trim();
+        const message = String(customer_message || '').trim();
 
         if (!phone) {
             return res.status(400).json({ message: 'Phone number is required' });
+        }
+
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ message: 'Valid email is required' });
+        }
+
+        if (!message) {
+            return res.status(400).json({ message: 'Order message is required' });
         }
 
         if (!product_id && !sku) {
@@ -749,34 +977,39 @@ app.post('/api/orders', async (req, res) => {
 
         const product = rows[0];
         const subject = `Заказ колодок ${product.sku}`;
-        const formattedOems = formatList(oem_numbers);
-        const formattedCompatibleCars = String(applicability_text || '').trim() || formatList(compatible_cars);
         const text = [
             'Новая заявка на заказ колодок',
             '',
+            `Имя клиента: ${name || 'Не указано'}`,
             `Телефон клиента: ${phone}`,
+            `Email клиента: ${email}`,
             '',
             `K3 номер: ${product.sku}`,
             `Название: ${product.title}`,
             `Категория: ${product.category_name}`,
-            `OEM: ${formattedOems}`,
-            `Применяемость: ${formattedCompatibleCars}`
+            '',
+            'Текст письма:',
+            message
         ].join('\n');
 
         const html = `
             <h2>Новая заявка на заказ колодок</h2>
+            <p><strong>Имя клиента:</strong> ${escapeHtml(name || 'Не указано')}</p>
             <p><strong>Телефон клиента:</strong> ${escapeHtml(phone)}</p>
+            <p><strong>Email клиента:</strong> ${escapeHtml(email)}</p>
             <hr>
             <p><strong>K3 номер:</strong> ${escapeHtml(product.sku)}</p>
             <p><strong>Название:</strong> ${escapeHtml(product.title)}</p>
             <p><strong>Категория:</strong> ${escapeHtml(product.category_name)}</p>
-            <p><strong>OEM:</strong> ${escapeHtml(formattedOems)}</p>
-            <p><strong>Применяемость:</strong> ${escapeHtml(formattedCompatibleCars)}</p>
+            <hr>
+            <p><strong>Текст письма:</strong></p>
+            <p>${formatMultilineHtml(message)}</p>
         `;
 
         await transporter.sendMail({
             from: process.env.SMTP_FROM || process.env.SMTP_USER || orderRecipientEmail,
             to: orderRecipientEmail,
+            replyTo: email,
             subject,
             text,
             html
@@ -785,7 +1018,10 @@ app.post('/api/orders', async (req, res) => {
         res.status(201).json({ message: 'Order request sent successfully' });
     } catch (err) {
         console.error(err);
-        res.status(500).json({
+        const smtpErrorCodes = new Set(['ETIMEDOUT', 'ESOCKET', 'ECONNECTION', 'EAUTH']);
+        const statusCode = smtpErrorCodes.has(err.code) ? 503 : 500;
+
+        res.status(statusCode).json({
             message: err.message || 'Error sending order request'
         });
     }

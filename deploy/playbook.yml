@@ -1,10 +1,15 @@
 - name: Provision and Deploy K3 Application
   hosts: web
   become: yes
-  vars:
-    frontend_release_id: "{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
-    frontend_release_dir: "/var/www/k3-app/releases/frontend/{{ frontend_release_id }}"
   tasks:
+    - name: Create stable frontend release id
+      ansible.builtin.set_fact:
+        frontend_release_id: "{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
+
+    - name: Create stable frontend release path
+      ansible.builtin.set_fact:
+        frontend_release_dir: "/var/www/k3-app/releases/frontend/{{ frontend_release_id }}"
+
     - name: Install system dependencies
       ansible.builtin.apt:
         name:
@@ -86,12 +91,26 @@
         mode: '0755'
 
     - name: Copy frontend build files
-      ansible.builtin.copy:
+      ansible.posix.synchronize:
         src: ../dist/
         dest: "{{ frontend_release_dir }}/"
-        owner: www-data
-        group: www-data
-        mode: '0755'
+        archive: false
+        recursive: true
+        links: true
+        times: true
+        delete: true
+        rsync_opts:
+          - "--chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r"
+
+    - name: Verify frontend release has index.html
+      ansible.builtin.stat:
+        path: "{{ frontend_release_dir }}/index.html"
+      register: frontend_index
+
+    - name: Abort if frontend release is incomplete
+      ansible.builtin.fail:
+        msg: "Frontend release {{ frontend_release_dir }} is incomplete: index.html is missing"
+      when: not frontend_index.stat.exists
 
     - name: Switch frontend release
       ansible.builtin.file:
@@ -103,12 +122,16 @@
         force: yes
 
     - name: Copy frontend product images
-      ansible.builtin.copy:
+      ansible.posix.synchronize:
         src: ../src/assets/img/
         dest: /var/www/k3-app/uploads/img/
-        owner: www-data
-        group: www-data
-        mode: '0755'
+        archive: false
+        recursive: true
+        links: true
+        times: true
+        delete: true
+        rsync_opts:
+          - "--chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r"
 
     - name: Copy backend files
       ansible.builtin.copy:
@@ -123,28 +146,55 @@
         - server.js
       notify: Restart backend
 
-    - name: Create backend env file
-      ansible.builtin.copy:
-        dest: /var/www/k3-app/backend/.env
-        content: |
+    - name: Ensure backend env file exists
+      ansible.builtin.file:
+        path: /var/www/k3-app/backend/.env
+        state: touch
+        owner: www-data
+        group: www-data
+        mode: '0600'
+
+    - name: Update backend core env values
+      ansible.builtin.blockinfile:
+        path: /var/www/k3-app/backend/.env
+        marker: "# {mark} ANSIBLE MANAGED CORE ENV"
+        block: |
           PORT=5001
           DB_HOST=127.0.0.1
           DB_USER=admin
           DB_PASSWORD=shpR1CQtunMLsNPE
           DB_NAME=k3_parts
           JWT_SECRET=143d67e4f1ef4f5e8ddb02757b1d69d1148c18ab15b576e1b01a18d5cda0d994dc62c68eb6551fe3ec3fc6926806ebb02080c3e5ba015d2d824f8dcd4910ea0c
-          ORDER_RECIPIENT_EMAIL=info@k3-parts.ru
-          SMTP_HOST=
-          SMTP_PORT=465
-          SMTP_SECURE=true
-          SMTP_USER=
-          SMTP_PASS=
-          SMTP_FROM=
+          ORDER_RECIPIENT_EMAIL={{ lookup('env', 'ORDER_RECIPIENT_EMAIL') | default('info@k3-parts.ru', true) }}
           UPLOAD_DIR=/var/www/k3-app/uploads/img
           NODE_ENV=production
         owner: www-data
         group: www-data
         mode: '0600'
+      notify: Restart backend
+
+    - name: Update backend SMTP env values from local environment
+      ansible.builtin.lineinfile:
+        path: /var/www/k3-app/backend/.env
+        regexp: "^{{ item.key }}="
+        line: "{{ item.key }}={{ item.value }}"
+        owner: www-data
+        group: www-data
+        mode: '0600'
+      loop:
+        - key: SMTP_HOST
+          value: "{{ lookup('env', 'SMTP_HOST') }}"
+        - key: SMTP_PORT
+          value: "{{ lookup('env', 'SMTP_PORT') | default('465', true) }}"
+        - key: SMTP_SECURE
+          value: "{{ lookup('env', 'SMTP_SECURE') | default('true', true) }}"
+        - key: SMTP_USER
+          value: "{{ lookup('env', 'SMTP_USER') }}"
+        - key: SMTP_PASS
+          value: "{{ lookup('env', 'SMTP_PASS') }}"
+        - key: SMTP_FROM
+          value: "{{ lookup('env', 'SMTP_FROM') }}"
+      when: item.value | length > 0
       notify: Restart backend
 
     - name: Install backend dependencies

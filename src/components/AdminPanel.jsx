@@ -1,8 +1,43 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { PLACEHOLDER_IMAGE, getProductImages } from "../utils/productImages";
 
 const ADMIN_TOKEN_KEY = "k3AdminToken";
+const skuCollator = new Intl.Collator("ru", {
+    numeric: true,
+    sensitivity: "base"
+});
+
+const getSkuNumber = (sku) => {
+    const digits = String(sku || "").match(/\d+/g)?.join("");
+
+    return digits ? Number(digits) : null;
+};
+
+const compareProductsBySku = (a, b) => {
+    const aSku = String(a?.sku || a?.title || "");
+    const bSku = String(b?.sku || b?.title || "");
+    const aNumber = getSkuNumber(aSku);
+    const bNumber = getSkuNumber(bSku);
+
+    if (aNumber !== null && bNumber !== null && aNumber !== bNumber) {
+        return aNumber - bNumber;
+    }
+
+    const skuDifference = skuCollator.compare(aSku, bSku);
+
+    if (skuDifference !== 0) {
+        return skuDifference;
+    }
+
+    return Number(a?.id || 0) - Number(b?.id || 0);
+};
+
+const isCarProduct = (product) => product?.category_slug === "car"
+    || String(product?.category_name || "").toLowerCase().includes("авто");
+
+const isMotoProduct = (product) => product?.category_slug === "moto"
+    || String(product?.category_name || "").toLowerCase().includes("мото");
 
 const parseResponse = async (response) => {
     const contentType = response.headers.get("content-type") || "";
@@ -37,6 +72,7 @@ const createEmptyProductForm = () => ({
 
 export default function AdminPanel() {
     const navigate = useNavigate();
+    const productFormRef = useRef(null);
 
     // Состояние для переключения вкладок в админке
     const [activeTab, setActiveTab] = useState("products");
@@ -51,6 +87,7 @@ export default function AdminPanel() {
     const [deletingKey, setDeletingKey] = useState("");
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const [editingProductId, setEditingProductId] = useState(null);
+    const [isImportingApplicability, setIsImportingApplicability] = useState(false);
 
     const fetchDictionaries = async () => {
         try {
@@ -216,6 +253,12 @@ export default function AdminPanel() {
         });
         setEditingProductId(product.id);
         setMessage(`Редактирование товара ${product.sku}`);
+        window.setTimeout(() => {
+            productFormRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        }, 0);
     };
 
     const handleImageChange = (e) => {
@@ -226,6 +269,55 @@ export default function AdminPanel() {
                 sort_order: index
             }));
             setProductForm(prev => ({ ...prev, images: [...prev.images, ...filesArray] }));
+        }
+    };
+
+    const handleApplicabilityDocxChange = async (event) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+
+        if (!file) {
+            return;
+        }
+
+        if (productForm.applicability_text.trim()) {
+            const shouldReplace = window.confirm("Заменить текущую применяемость текстом из DOCX?");
+
+            if (!shouldReplace) {
+                return;
+            }
+        }
+
+        setIsImportingApplicability(true);
+        setMessage("");
+
+        const formData = new FormData();
+        formData.append("docx", file);
+
+        try {
+            const response = await fetch("/api/applicability/format-docx", {
+                method: "POST",
+                headers: getAdminAuthHeaders(),
+                body: formData
+            });
+
+            const data = await parseResponse(response);
+            handleAuthError(response, data);
+
+            if (!response.ok) {
+                throw new Error(data.message || "Не удалось импортировать DOCX");
+            }
+
+            setProductForm(prev => ({
+                ...prev,
+                applicability_text: data.text || ""
+            }));
+            setMessage(`Применяемость импортирована из ${file.name}`);
+        } catch (error) {
+            console.error("Error importing applicability DOCX:", error);
+            setMessage(error.message);
+        } finally {
+            setIsImportingApplicability(false);
         }
     };
 
@@ -428,6 +520,31 @@ export default function AdminPanel() {
         }
     };
 
+    const productColumns = useMemo(() => {
+        const sortedProducts = [...products].sort(compareProductsBySku);
+        const carProducts = sortedProducts.filter(isCarProduct);
+        const motoProducts = sortedProducts.filter(isMotoProduct);
+        const groupedIds = new Set([...carProducts, ...motoProducts].map(product => product.id));
+        const otherProducts = sortedProducts.filter(product => !groupedIds.has(product.id));
+
+        return [
+            {
+                title: "Авто колодки",
+                products: carProducts
+            },
+            {
+                title: "Мото колодки",
+                products: motoProducts
+            },
+            ...(otherProducts.length > 0
+                ? [{
+                    title: "Без категории",
+                    products: otherProducts
+                }]
+                : [])
+        ];
+    }, [products]);
+
     if (isCheckingAuth) {
         return (
             <div className="max-w-4xl mx-auto p-6 font-sans text-gray-800">
@@ -437,6 +554,38 @@ export default function AdminPanel() {
     }
 
     const visibleExistingImages = getVisibleExistingImages();
+    const renderProductListItem = (product) => (
+        <div key={product.id} className="flex flex-col gap-3 rounded-lg border border-gray-200 p-3">
+            <div>
+                <p className="font-semibold text-gray-900">{product.sku} — {product.title}</p>
+                <p className="text-sm text-gray-500">{product.category_name}</p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => handleEditProduct(product)}
+                    className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:cursor-not-allowed disabled:bg-gray-400"
+                >
+                    Редактировать
+                </button>
+                <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => handleDelete(
+                        `товар ${product.sku}`,
+                        `/api/products/${product.id}`,
+                        "Товар удален",
+                        "Связанные OEM номера, применяемость и изображения тоже будут удалены.",
+                        `product-${product.id}`
+                    )}
+                    className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors disabled:cursor-not-allowed disabled:bg-gray-400"
+                >
+                    {deletingKey === `product-${product.id}` ? "Удаление..." : "Удалить"}
+                </button>
+            </div>
+        </div>
+    );
 
     return (
         <div className="max-w-4xl mx-auto p-6 font-sans text-gray-800">
@@ -491,7 +640,7 @@ export default function AdminPanel() {
             {/* ВКЛАДКА 1: ДОБАВЛЕНИЕ ТОВАРА */}
             {activeTab === "products" && (
                 <div className="flex flex-col gap-6">
-                    <form onSubmit={handleProductSubmit} className="flex flex-col gap-4 bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm">
+                    <form ref={productFormRef} onSubmit={handleProductSubmit} className="flex flex-col gap-4 bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm">
                         <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <h2 className="text-xl font-semibold text-gray-900">
                                 {editingProductId ? "Редактировать товар" : "Добавить новый товар"}
@@ -566,7 +715,19 @@ export default function AdminPanel() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Применяемость:</label>
+                            <div className="mb-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <label className="block text-sm font-medium text-gray-700">Применяемость:</label>
+                                <label className={`inline-flex cursor-pointer items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 ${isImportingApplicability ? "pointer-events-none opacity-60" : ""}`}>
+                                    {isImportingApplicability ? "Импорт..." : "Импорт из DOCX"}
+                                    <input
+                                        type="file"
+                                        accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                        onChange={handleApplicabilityDocxChange}
+                                        disabled={isImportingApplicability || isSubmitting}
+                                        className="sr-only"
+                                    />
+                                </label>
+                            </div>
                             <textarea
                                 name="applicability_text"
                                 value={productForm.applicability_text}
@@ -575,7 +736,9 @@ export default function AdminPanel() {
                                 placeholder={"KM1191\nAJP, SPR 240 X, объем 240куб.см, 22-24г.в., перед\nAJP, SPR 310 R, объем 310куб.см, 22-24г.в., перед"}
                                 className="w-full p-2.5 text-sm leading-relaxed border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                             />
-                            <p className="mt-1 text-sm text-gray-500">Можно вставлять большой многострочный текст из Word. Переносы строк сохраняются.</p>
+                            <p className="mt-1 text-sm text-gray-500">
+                                Переносы строк сохраняются. Форматирование: **жирный**, [big]крупный[/big], [small]мелкий[/small], # Заголовок.
+                            </p>
                         </div>
 
                         {/* Загрузка картинок */}
@@ -589,28 +752,28 @@ export default function AdminPanel() {
                                 <p className="text-sm text-gray-500 mt-1">Если не выбрать файлы, текущие изображения останутся без изменений.</p>
                             )}
                             {editingProductId && visibleExistingImages.length > 0 && (
-                                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                                     {visibleExistingImages.map((image) => (
-                                        <div key={image.id} className="rounded-lg border border-gray-200 bg-white p-3">
-                                            <div className="mb-3 aspect-square overflow-hidden rounded-md bg-gray-100">
+                                        <div key={image.id} className="rounded-lg border border-gray-200 bg-white p-2">
+                                            <div className="mb-2 h-24 overflow-hidden rounded-md bg-gray-100">
                                                 <img
                                                     src={image.file_path}
                                                     alt="Изображение товара"
-                                                    className="h-full w-full object-contain p-2"
+                                                    className="h-full w-full object-contain p-1"
                                                     onError={(e) => {
                                                         e.target.src = PLACEHOLDER_IMAGE;
                                                         e.target.onerror = null;
                                                     }}
                                                 />
                                             </div>
-                                            <p className="mb-2 truncate text-xs text-gray-500" title={image.file_path}>
+                                            <p className="mb-2 truncate text-[10px] text-gray-500" title={image.file_path}>
                                                 {image.file_path}
                                             </p>
-                                            <div className="flex flex-col gap-2 sm:flex-row">
+                                            <div className="flex flex-col gap-1.5">
                                                 <button
                                                     type="button"
                                                     onClick={() => handleSetMainExistingImage(image.id)}
-                                                    className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${image.is_main
+                                                    className={`rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${image.is_main
                                                         ? "bg-green-100 text-green-700"
                                                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                                         }`}
@@ -620,7 +783,7 @@ export default function AdminPanel() {
                                                 <button
                                                     type="button"
                                                     onClick={() => handleDeleteExistingImage(image.id)}
-                                                    className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
+                                                    className="rounded-md bg-red-50 px-2 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
                                                 >
                                                     Удалить
                                                 </button>
@@ -658,44 +821,32 @@ export default function AdminPanel() {
 
                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                         <h2 className="text-xl font-semibold text-gray-900 mb-4">Товары</h2>
-                        <div className="flex flex-col gap-2">
-                            {products.length === 0 && (
-                                <p className="text-sm text-gray-500">Товары пока не добавлены</p>
-                            )}
-                            {products.map((product) => (
-                                <div key={product.id} className="flex flex-col gap-3 rounded-lg border border-gray-200 p-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <div>
-                                        <p className="font-semibold text-gray-900">{product.sku} — {product.title}</p>
-                                        <p className="text-sm text-gray-500">{product.category_name}</p>
-                                    </div>
-                                    <div className="flex flex-col gap-2 sm:flex-row">
-                                        <button
-                                            type="button"
-                                            disabled={isSubmitting}
-                                            onClick={() => handleEditProduct(product)}
-                                            className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:cursor-not-allowed disabled:bg-gray-400"
-                                        >
-                                            Редактировать
-                                        </button>
-                                        <button
-                                            type="button"
-                                            disabled={isSubmitting}
-                                            onClick={() => handleDelete(
-                                                `товар ${product.sku}`,
-                                                `/api/products/${product.id}`,
-                                                "Товар удален",
-                                                "Связанные OEM номера, применяемость и изображения тоже будут удалены.",
-                                                `product-${product.id}`
+                        {products.length === 0 ? (
+                            <p className="text-sm text-gray-500">Товары пока не добавлены</p>
+                        ) : (
+                            <div className={`grid grid-cols-1 gap-4 ${productColumns.length > 2 ? "xl:grid-cols-3" : "lg:grid-cols-2"}`}>
+                                {productColumns.map((column) => (
+                                    <div key={column.title} className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                                        <div className="mb-3 flex items-center justify-between gap-3">
+                                            <h3 className="font-semibold text-gray-900">{column.title}</h3>
+                                            <span className="rounded-full bg-white px-2 py-1 text-xs font-medium text-gray-500">
+                                                {column.products.length}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            {column.products.length > 0 ? (
+                                                column.products.map(renderProductListItem)
+                                            ) : (
+                                                <p className="rounded-lg border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-500">
+                                                    Товаров нет
+                                                </p>
                                             )}
-                                            className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors disabled:cursor-not-allowed disabled:bg-gray-400"
-                                        >
-                                            {deletingKey === `product-${product.id}` ? "Удаление..." : "Удалить"}
-                                        </button>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
+                        )}
                         </div>
-                    </div>
                 </div>
             )}
 

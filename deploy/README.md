@@ -17,6 +17,40 @@
    wsl -d Ubuntu ansible-playbook -i deploy/hosts.ini deploy/playbook.yml
    ```
 
+## Настройка отправки заявок на почту
+
+Чтобы сайт сам отправлял заявки, при деплое нужно передать SMTP-доступы от ящика `info@k3-parts.ru`.
+
+Пример для Яндекс 360:
+
+```bash
+export ORDER_RECIPIENT_EMAIL=info@k3-parts.ru
+export SMTP_HOST=smtp.yandex.ru
+export SMTP_PORT=465
+export SMTP_SECURE=true
+export SMTP_USER=info@k3-parts.ru
+export SMTP_PASS='пароль_приложения_или_smtp_пароль'
+export SMTP_FROM=info@k3-parts.ru
+
+ANSIBLE_LOCAL_TEMP=/tmp/ansible-local ansible-playbook -i deploy/hosts.ini deploy/playbook.yml
+```
+
+Пример для Mail.ru / VK WorkMail:
+
+```bash
+export ORDER_RECIPIENT_EMAIL=info@k3-parts.ru
+export SMTP_HOST=smtp.mail.ru
+export SMTP_PORT=465
+export SMTP_SECURE=true
+export SMTP_USER=info@k3-parts.ru
+export SMTP_PASS='пароль_приложения_или_smtp_пароль'
+export SMTP_FROM=info@k3-parts.ru
+
+ANSIBLE_LOCAL_TEMP=/tmp/ansible-local ansible-playbook -i deploy/hosts.ini deploy/playbook.yml
+```
+
+Если SMTP уже был прописан в `/var/www/k3-app/backend/.env` на сервере, деплой больше не затирает эти значения пустыми строками.
+
 ## Как это работает
 
 * **Хосты**: Настраиваются в файле `hosts.ini`.

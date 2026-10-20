@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import moto from '../../src/assets/img/moto-bg.jpg';
+import moto from '../assets/img/catalog-moto-silhouette.jpg';
 
-import car from '../../src/assets/img/car-bg.jpg'
+import car from '../assets/img/catalog-car-silhouette.jpg'
 
 
 const ChooseCategory = () => {
@@ -12,26 +12,29 @@ const ChooseCategory = () => {
     };
 
     // Общий класс для карточки
-    const baseCardClass = "relative w-full max-w-2xl min-h-[250px] sm:min-h-[px] rounded-xl overflow-hidden shadow-lg group flex items-center justify-center transition-all duration-300 cursor-pointer";
+    const baseCardClass = "relative aspect-[3/2] w-full rounded-xl overflow-hidden bg-zinc-900 shadow-lg group flex items-end text-left transition-shadow duration-300 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-green-600";
 
-    const activeClass = "opacity-80 hover:opacity-100 hover:scale-[1.01]";
+    const activeClass = "hover:shadow-xl";
 
     return (
-        <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
             <button
+                type="button"
                 onClick={() => goTo('car')}
                 className={`${baseCardClass} ${activeClass}`}
             >
                 <img
                     src={car}
                     alt="Автомобили"
-                    className="absolute self-center inset-0 object-cover transition-transform duration-700 group-hover:scale-105"
+                    width={1536}
+                    height={1024}
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 motion-safe:group-hover:scale-105"
                 />
 
-                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors"></div>
+                <div aria-hidden="true" className="absolute inset-0 bg-linear-to-t from-black/90 via-black/10 to-transparent"></div>
 
-                <div className="relative z-10 flex flex-col justify-center p-6 text-white text-center">
+                <div className="relative z-10 flex flex-col p-5 md:p-6 text-white">
                     <h2 className="text-2xl sm:text-3xl font-bold mb-2 uppercase tracking-wide">
                         Автомобили
                     </h2>
@@ -41,6 +44,7 @@ const ChooseCategory = () => {
 
             {/* Кнопка МОТОЦИКЛЫ */}
             <button
+                type="button"
                 onClick={() => goTo('moto')}
                 className={`${baseCardClass} ${activeClass}`}
             >
@@ -48,11 +52,13 @@ const ChooseCategory = () => {
                 <img
                     src={moto} 
                     alt="Мотоциклы"
-                    className="absolute inset-0 self-center object-cover transition-transform duration-700 group-hover:scale-105"
+                    width={1536}
+                    height={1024}
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 motion-safe:group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors"></div>
+                <div aria-hidden="true" className="absolute inset-0 bg-linear-to-t from-black/90 via-black/10 to-transparent"></div>
 
-                <div className="relative z-10 flex flex-col justify-center p-6 text-white text-center">
+                <div className="relative z-10 flex flex-col p-5 md:p-6 text-white">
                     <h2 className="text-2xl sm:text-3xl font-bold mb-2 uppercase tracking-wide">
                         Мотоциклы
                     </h2>

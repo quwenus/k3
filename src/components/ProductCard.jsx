@@ -1,15 +1,14 @@
-import { useEffect, useState } from 'react';
-import { stripApplicabilityFormatting } from './FormattedApplicability';
+import { useState } from 'react';
+import { ApplicabilityPreview } from './FormattedApplicability';
+import { stripApplicabilityFormatting } from '../utils/applicability.js';
 import OrderModal from './OrderModal';
 import { PLACEHOLDER_IMAGE, getProductImages } from '../utils/productImages';
 
 const ProductCard = ({ product, onOpenModal }) => {
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
-    const [imageIndex, setImageIndex] = useState(0);
-
-    useEffect(() => {
-        setImageIndex(0);
-    }, [product?.id, product?.images]);
+    const [imageState, setImageState] = useState({ id: null, images: null, index: 0 });
+    const imageIndex = imageState.id === product?.id && imageState.images === product?.images
+        ? imageState.index : 0;
 
     if (!product) return null;
 
@@ -49,7 +48,7 @@ const ProductCard = ({ product, onOpenModal }) => {
                     className="block h-full w-full rounded-[14px] object-contain"
                     onError={(e) => {
                         if (imageIndex < productImages.length - 1) {
-                            setImageIndex(currentIndex => currentIndex + 1);
+                            setImageState({ id: product.id, images: product.images, index: imageIndex + 1 });
                             return;
                         }
 
@@ -79,7 +78,7 @@ const ProductCard = ({ product, onOpenModal }) => {
 
                 {plainCompatibility && (
                     <p className="text-[10px] text-gray-500 mb-2 wrap-break-words line-clamp-3 whitespace-pre-wrap" title={plainCompatibility}>
-                        Применяемость: {plainCompatibility}
+                        Применяемость: <ApplicabilityPreview value={formattedCompatibility} />
                     </p>
                 )}
 

@@ -9,6 +9,7 @@ import WarrantyPage from "./pages/WarrantyPage"
 import CatalogPage from "./pages/CatalogPage"
 import CatalogCarPage from "./pages/CatalogCarPage"
 import CatalogMotoPage from "./pages/CatalogMotoPage"
+import CatalogSearchPage from "./pages/CatalogSearchPage"
 
 import AdminCreate from "./components/AdminCreate" 
 import AdminPanel from "./components/AdminPanel"
@@ -25,6 +26,7 @@ const MainLayout = () => {
           <Route path="/" element={<MainPage />} />
           <Route path="/warranty" element={<WarrantyPage />} />
           <Route path="/catalog" element={<CatalogPage />} />
+          <Route path="/catalog/search" element={<CatalogSearchPage />} />
           <Route path="/catalog/car" element={<CatalogCarPage />} />
           <Route path="/catalog/moto" element={<CatalogMotoPage />} />
           {/* Поймает все остальные неизвестные страницы */}

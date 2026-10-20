@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useId } from 'react';
 import { IoClose } from 'react-icons/io5';
 
 const getPhoneDigits = (value) => {
@@ -56,6 +56,8 @@ const OrderModal = ({ product, isOpen, onClose }) => {
     const [step, setStep] = useState("contacts");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState("");
+    const formRef = useRef(null);
+    const titleId = useId();
 
     const { id, sku, title } = product || {};
 
@@ -73,12 +75,33 @@ const OrderModal = ({ product, isOpen, onClose }) => {
         const handleEsc = (event) => {
             if (event.key === 'Escape') {
                 onClose();
+                return;
+            }
+            if (event.key === 'Tab') {
+                const elements = [...formRef.current.querySelectorAll('button, input, textarea')]
+                    .filter(element => !element.disabled && element.getClientRects().length);
+                const first = elements[0];
+                const last = elements[elements.length - 1];
+                if (event.shiftKey && document.activeElement === first) {
+                    event.preventDefault();
+                    last?.focus();
+                } else if (!event.shiftKey && document.activeElement === last) {
+                    event.preventDefault();
+                    first?.focus();
+                }
             }
         };
 
         window.addEventListener('keydown', handleEsc);
         return () => window.removeEventListener('keydown', handleEsc);
     }, [isOpen, onClose]);
+
+    useEffect(() => {
+        if (!isOpen) return undefined;
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = previousOverflow; };
+    }, [isOpen]);
 
     if (!isOpen || !product) return null;
 
@@ -195,13 +218,17 @@ const OrderModal = ({ product, isOpen, onClose }) => {
             onClick={onClose}
         >
             <form
+                ref={formRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
                 onSubmit={step === "letter" ? handleSubmit : handleContinue}
-                className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+                className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-2xl bg-white p-5 shadow-2xl"
                 onClick={(event) => event.stopPropagation()}
             >
                 <div className="mb-4 flex items-start justify-between gap-4">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900">Оформить заказ</h2>
+                        <h2 id={titleId} className="text-xl font-bold text-gray-900">Оформить заказ</h2>
                         <p className="mt-1 text-sm text-gray-500">{sku} · {title}</p>
                     </div>
                     <button

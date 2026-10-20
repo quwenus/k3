@@ -9,6 +9,7 @@
     "format:applicability": "python3 scripts/format-applicability-docx.py",
     "local": "npm run build && npm --prefix backend start",
     "lint": "eslint .",
+    "test:search": "node --test src/utils/productSearch.test.js src/utils/applicability.test.js",
     "preview": "vite preview"
   },
   "dependencies": {

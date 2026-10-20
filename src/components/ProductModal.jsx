@@ -1,240 +1,198 @@
-import { useState, useEffect } from 'react';
-import { IoClose, IoChevronBack, IoChevronDown, IoChevronForward, IoChevronUp } from 'react-icons/io5';
+import { useState, useEffect, useRef, useId } from 'react';
+import { IoClose, IoChevronBack, IoChevronForward, IoSearchOutline, IoArrowForward } from 'react-icons/io5';
 import FormattedApplicability from './FormattedApplicability';
+import { filterApplicability } from '../utils/applicability.js';
 import OrderModal from './OrderModal';
 import { PLACEHOLDER_IMAGE, getProductImages } from '../utils/productImages';
 
-
 const ProductModal = ({ product, onClose }) => {
-    const [compatibilityState, setCompatibilityState] = useState({ sku: null, isOpen: false });
-    const [imageState, setImageState] = useState({ sku: null, index: 0 });
+    const [activeTab, setActiveTab] = useState('compatibility');
+    const [modelQuery, setModelQuery] = useState('');
+    const [imageIndex, setImageIndex] = useState(0);
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
-
-    const {
-        sku,
-        title,
-        oem_numbers,
-        price,
-        applicability_text,
-        compatible_cars,
-        images
-    } = product || {};
-
+    const dialogRef = useRef(null);
+    const closeRef = useRef(null);
+    const orderButtonRef = useRef(null);
+    const panelId = useId();
+    const titleId = useId();
+    const { sku, title, oem_numbers, price, applicability_text, compatible_cars, images } = product || {};
     const sliderImages = getProductImages(images);
-    const activeImageIndex = imageState.sku === sku ? imageState.index : 0;
-    const isCompatibilityOpen = compatibilityState.sku === sku ? compatibilityState.isOpen : false;
-    const currentImage = sliderImages[activeImageIndex] || sliderImages[0];
-    const hasMultipleImages = sliderImages.length > 1;
-    const manualApplicability = String(applicability_text || '').trim();
-    const compatibleCars = Array.isArray(compatible_cars)
-        ? compatible_cars.filter(Boolean)
-        : [];
-    const formattedCompatibility = manualApplicability || compatibleCars.join(', ');
-    const hasCompatibility = Boolean(manualApplicability) || compatibleCars.length > 0;
-
+    const currentImage = sliderImages[imageIndex] || sliderImages[0];
+    const compatibleCars = Array.isArray(compatible_cars) ? compatible_cars.filter(Boolean) : [];
+    const applicability = String(applicability_text || '').trim() || compatibleCars.join('\n');
+    const filteredApplicability = filterApplicability(applicability, modelQuery);
+    const oemNumbers = [...new Set((Array.isArray(oem_numbers) ? oem_numbers : [oem_numbers])
+        .flatMap(value => String(value || '').split(/[,;\r\n\t]+/))
+        .map(value => value.trim()).filter(Boolean))];
     const formattedPrice = new Intl.NumberFormat('ru-RU').format(price || 0);
+    const selectedTab = applicability ? activeTab : 'oem';
 
-    const showPreviousImage = () => {
-        setImageState((currentState) => {
-            const currentIndex = currentState.sku === sku ? currentState.index : 0;
-
-            return {
-                sku,
-                index: currentIndex === 0 ? sliderImages.length - 1 : currentIndex - 1
-            };
-        });
-    };
-
-    const showNextImage = () => {
-        setImageState((currentState) => {
-            const currentIndex = currentState.sku === sku ? currentState.index : 0;
-
-            return {
-                sku,
-                index: currentIndex === sliderImages.length - 1 ? 0 : currentIndex + 1
-            };
-        });
-    };
-
-    // Закрытие по Escape
     useEffect(() => {
-        if (!product) return undefined;
-
-        const handleEsc = (e) => {
-            if (e.key === 'Escape') onClose();
+        const previousFocus = document.activeElement;
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        closeRef.current?.focus();
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            previousFocus?.focus();
         };
-        window.addEventListener('keydown', handleEsc);
-        return () => window.removeEventListener('keydown', handleEsc);
-    }, [onClose, product]);
+    }, []);
+
+    useEffect(() => {
+        if (isOrderModalOpen) return undefined;
+        const handleKey = event => {
+            if (event.key === 'Escape') onClose();
+            if (event.key !== 'Tab') return;
+            const elements = [...dialogRef.current.querySelectorAll('button, input, [tabindex="0"]')]
+                .filter(element => !element.disabled && element.getClientRects().length);
+            const first = elements[0];
+            const last = elements[elements.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last?.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first?.focus();
+            }
+        };
+        window.addEventListener('keydown', handleKey);
+        return () => window.removeEventListener('keydown', handleKey);
+    }, [isOrderModalOpen, onClose]);
 
     if (!product) return null;
+    const moveImage = direction => setImageIndex(index => (index + direction + sliderImages.length) % sliderImages.length);
+    const changeTab = tab => {
+        setActiveTab(tab);
+        dialogRef.current?.querySelector('[data-product-scroll]')?.scrollTo({ top: 0 });
+    };
+    const handleImageError = event => {
+        if (event.currentTarget.getAttribute('src') !== PLACEHOLDER_IMAGE) event.currentTarget.src = PLACEHOLDER_IMAGE;
+    };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-sm md:p-4" onClick={onClose}>
+        <>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/65 p-2 backdrop-blur-sm sm:p-5" onClick={onClose}>
+                <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId}
+                    className="flex max-h-[94dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:rounded-3xl"
+                    onClick={event => event.stopPropagation()}>
+                    <header className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 sm:px-7 sm:py-4">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <span className="h-6 w-1 shrink-0 rounded-full bg-green-600" />
+                            <span className="text-sm text-gray-500">Карточка товара</span>
+                            <span className="truncate text-sm font-semibold text-gray-900">{sku}</span>
+                        </div>
+                        <button ref={closeRef} type="button" onClick={onClose} aria-label="Закрыть карточку"
+                            className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gray-100 text-gray-600 transition-colors hover:bg-gray-200 focus-visible:outline-2 focus-visible:outline-green-600">
+                            <IoClose size={22} />
+                        </button>
+                    </header>
 
-            <div
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[88vh]"
-                onClick={(e) => e.stopPropagation()}
-            >
-
-                {/* Шапка */}
-                <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-50 shrink-0 md:px-5">
-                    <h2 className="text-lg font-bold text-gray-800 md:text-xl">Подробная информация</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors cursor-pointer">
-                        <IoClose size={24} />
-                    </button>
-                </div>
-
-                {/* Тело с прокруткой */}
-                <div className="overflow-y-auto custom-scrollbar grow p-4 md:p-5">
-                    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
-
-                    <div>
-                        {/* Изображения */}
-                        <div className="relative aspect-4/3 overflow-hidden rounded-xl bg-gray-100 shadow-inner">
-                            <img
-                                src={currentImage.file_path}
-                                alt={title}
-                                className="w-full h-full object-contain"
-                                onError={(e) => {
-                                    if (activeImageIndex < sliderImages.length - 1) {
-                                        showNextImage();
-                                        return;
-                                    }
-
-                                    e.target.src = PLACEHOLDER_IMAGE;
-                                    e.target.onerror = null;
-                                }}
-                            />
-
-                            {hasMultipleImages && (
-                                <>
-                                    <button
-                                        type="button"
-                                        aria-label="Предыдущее изображение"
-                                        onClick={showPreviousImage}
-                                        className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-gray-800 shadow hover:bg-white transition-colors"
-                                    >
-                                        <IoChevronBack size={22} />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        aria-label="Следующее изображение"
-                                        onClick={showNextImage}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-gray-800 shadow hover:bg-white transition-colors"
-                                    >
-                                        <IoChevronForward size={22} />
-                                    </button>
-                                    <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/35 px-2 py-1">
+                    <div data-product-scroll className="min-h-0 overflow-y-auto overscroll-contain">
+                        <div className="grid items-start gap-6 p-4 sm:gap-8 sm:p-7 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+                            <div className="md:sticky md:top-7">
+                                <div className="relative flex h-56 items-center justify-center overflow-hidden rounded-2xl border border-gray-100 bg-white sm:h-72 md:aspect-square md:h-auto">
+                                    <img src={currentImage.file_path} alt={`${title}, фото ${imageIndex + 1}`}
+                                        className="h-full w-full object-contain p-4 sm:p-6" onError={handleImageError} />
+                                    {sliderImages.length > 1 && (
+                                        <>
+                                            <button type="button" aria-label="Предыдущее фото" onClick={() => moveImage(-1)}
+                                                className="absolute left-2 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-700 shadow-sm hover:bg-gray-100">
+                                                <IoChevronBack size={20} />
+                                            </button>
+                                            <button type="button" aria-label="Следующее фото" onClick={() => moveImage(1)}
+                                                className="absolute right-2 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-700 shadow-sm hover:bg-gray-100">
+                                                <IoChevronForward size={20} />
+                                            </button>
+                                            <span className="absolute bottom-3 right-3 rounded-full bg-gray-100 px-2.5 py-1 text-xs tabular-nums text-gray-500">{imageIndex + 1} / {sliderImages.length}</span>
+                                        </>
+                                    )}
+                                </div>
+                                {sliderImages.length > 1 && (
+                                    <div className="mt-3 flex gap-2 overflow-x-auto pb-1" aria-label="Фотографии товара">
                                         {sliderImages.map((image, index) => (
-                                            <button
-                                                key={image.id || `${image.file_path}-${index}`}
-                                                type="button"
-                                                aria-label={`Изображение ${index + 1}`}
-                                                onClick={() => setImageState({ sku, index })}
-                                                className={`h-2 w-2 rounded-full transition-colors ${index === activeImageIndex ? 'bg-white' : 'bg-white/45 hover:bg-white/75'}`}
-                                            />
+                                            <button key={image.id || `${image.file_path}-${index}`} type="button"
+                                                aria-label={`Показать фото ${index + 1}`} aria-pressed={index === imageIndex}
+                                                onClick={() => setImageIndex(index)}
+                                                className={`h-16 w-16 shrink-0 cursor-pointer overflow-hidden rounded-xl border-2 bg-white p-1 transition-colors ${index === imageIndex ? 'border-green-600' : 'border-gray-100 hover:border-gray-300'}`}>
+                                                <img src={image.file_path} alt="" className="h-full w-full object-contain" onError={handleImageError} />
+                                            </button>
                                         ))}
                                     </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    <div>
-                        {/* Артикул и Название */}
-                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-                            <span className="inline-block shrink-0 px-2 py-1 bg-green-100 text-green-700 text-lg font-bold rounded">
-                                {sku}
-                            </span>
-                            <h3 className="text-xl font-bold text-gray-900 leading-tight wrap-break-words">
-                                {title}
-                            </h3>
-                        </div>
-
-                        {/* Характеристики */}
-                        <div className="grid grid-cols-2 gap-4 mb-5 bg-gray-50 p-4 rounded-lg border border-gray-100">
-                            {/* <div>
-                                <p className="text-xs text-gray-500 uppercase font-semibold">Ширина</p>
-                                <p className="font-medium text-gray-800">{width_mm} мм</p>
+                                )}
                             </div>
-                            <div>
-                                <p className="text-xs text-gray-500 uppercase font-semibold">Высота</p>
-                                <p className="font-medium text-gray-800">{height_mm} мм</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 uppercase font-semibold">Толщина</p>
-                                <p className="font-medium text-gray-800">{thickness_mm} мм</p>
-                            </div> */}
-                            <div>
-                                <p className="text-xs text-gray-500 uppercase font-semibold">Тип</p>
-                                <p className="font-medium text-gray-800">Дисковые</p>
-                            </div>
-                        </div>
 
-                        {/* OEM номера */}
-                        {oem_numbers && (
-                            <div className="mb-5">
-                                <p className="text-sm font-semibold text-gray-700 mb-1">Оригинальные номера (OEM):</p>
-                                <p className="max-h-36 overflow-y-auto whitespace-pre-wrap text-sm text-gray-600 font-mono bg-gray-100 p-2 rounded border border-gray-200 wrap-break-word">
-                                    {Array.isArray(oem_numbers)
-                                        ? oem_numbers.join(', ')
-                                        : oem_numbers}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                    </div>
+                            <div className="min-w-0">
+                                <p className="text-xs font-semibold uppercase tracking-widest text-green-700">Артикул {sku}</p>
+                                <h2 id={titleId} className="mt-2 text-2xl leading-tight font-bold text-gray-950 wrap-break-word sm:text-3xl">{title}</h2>
+                                <p className="mt-3 text-sm text-gray-500">Тип колодок <span className="ml-2 font-medium text-gray-800">Дисковые</span></p>
 
-                    {/* --- ВЫПАДАЮЩИЙ СПИСОК ПРИМЕНЯЕМОСТИ --- */}
-                    {hasCompatibility && (
-                        <div className="mt-5 border border-blue-100 rounded-lg overflow-hidden">
-                            {/* Кнопка-заголовок */}
-                            <button
-                                onClick={() => setCompatibilityState({ sku, isOpen: !isCompatibilityOpen })}
-                                className="w-full flex items-center justify-between p-3 bg-blue-50 hover:bg-blue-100 transition-colors text-left"
-                            >
-                                <span className="text-sm font-semibold text-blue-900">
-                                    Применяемость
-                                </span>
-                                {isCompatibilityOpen ? <IoChevronUp /> : <IoChevronDown />}
-                            </button>
-
-                            {/* Раскрывающийся контент */}
-                            {isCompatibilityOpen && (
-                                <div className="max-h-72 overflow-y-auto p-3 bg-white border-t border-blue-100 animate-fade-in-down cursor-pointer">
-                                    <FormattedApplicability value={formattedCompatibility} />
+                                <div role="tablist" aria-label="Информация о товаре" className="mt-6 flex gap-5 border-b border-gray-200">
+                                    {[
+                                        ...(applicability ? [{ id: 'compatibility', label: 'Применяемость' }] : []),
+                                        { id: 'oem', label: `OEM / аналоги${oemNumbers.length ? ` · ${oemNumbers.length}` : ''}` },
+                                    ].map(tab => (
+                                        <button key={tab.id} id={`${panelId}-${tab.id}`} type="button" role="tab"
+                                            aria-selected={selectedTab === tab.id} aria-controls={`${panelId}-content`}
+                                            onClick={() => changeTab(tab.id)}
+                                            className={`-mb-px cursor-pointer border-b-2 pb-3 text-sm font-semibold transition-colors ${selectedTab === tab.id ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-900'}`}>
+                                            {tab.label}
+                                        </button>
+                                    ))}
                                 </div>
-                            )}
+
+                                <div id={`${panelId}-content`} role="tabpanel" aria-labelledby={`${panelId}-${selectedTab}`} className="pt-4">
+                                    {selectedTab === 'compatibility' ? (
+                                        <>
+                                            <label className="relative mb-4 flex items-center">
+                                                <IoSearchOutline size={18} className="pointer-events-none absolute left-3 text-gray-400" />
+                                                <input type="search" value={modelQuery} onChange={event => setModelQuery(event.target.value)}
+                                                    aria-label="Поиск в применяемости" placeholder="Найти марку или модель"
+                                                    className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 pr-3 pl-10 text-sm outline-none transition-colors placeholder:text-gray-400 focus:border-green-600 focus:bg-white focus:ring-2 focus:ring-green-600/10" />
+                                            </label>
+                                            {filteredApplicability ? (
+                                                <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4 [&_strong]:inline-block [&_strong]:pt-2 [&_strong]:pb-1 [&_div:first-child_strong]:pt-0">
+                                                    <FormattedApplicability value={filteredApplicability} />
+                                                </div>
+                                            ) : (
+                                                <div role="status" className="rounded-xl bg-gray-50 px-4 py-8 text-center">
+                                                    <p className="text-sm font-medium text-gray-900">Совпадений не найдено</p>
+                                                    <p className="mt-1 text-sm text-gray-500">Попробуйте другое название марки или модели.</p>
+                                                    <button type="button" onClick={() => setModelQuery('')} className="mt-3 cursor-pointer text-sm font-semibold text-green-700 hover:text-green-800">Сбросить поиск</button>
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <p className="mb-4 text-sm leading-relaxed text-gray-500">Оригинальные номера и артикулы аналогов для сверки.</p>
+                                            {oemNumbers.length ? (
+                                                <ul className="flex flex-wrap gap-2" aria-label="OEM и аналоги">
+                                                    {oemNumbers.map(number => <li key={number} className="max-w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 font-mono text-xs leading-relaxed text-gray-700 wrap-break-word">{number}</li>)}
+                                                </ul>
+                                            ) : <p className="text-sm text-gray-500">OEM-номера пока не указаны.</p>}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
                         </div>
-                    )}
-                    {/* --------------------------------------- */}
-
-                </div>
-
-                {/* Футер с ценой */}
-                <div className="p-4 border-t bg-gray-50 flex items-center justify-between shrink-0">
-                    <div>
-                        <p className="text-xs text-gray-500">Цена за комплект</p>
-                        <p className="text-2xl font-bold text-green-600">{formattedPrice} ₽</p>
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => setIsOrderModalOpen(true)}
-                        className="bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors shadow-lg active:scale-95"
-                    >
-                        Заказать
-                    </button>
-                </div>
 
+                    <footer className="flex shrink-0 items-center justify-between gap-4 border-t border-gray-100 bg-white px-4 py-4 sm:px-7">
+                        <div>
+                            <p className="text-xs text-gray-500">Цена за комплект</p>
+                            <p className="mt-0.5 text-2xl font-bold tracking-tight text-gray-950 sm:text-3xl">{formattedPrice} <span className="text-lg font-medium text-gray-500">₽</span></p>
+                        </div>
+                        <button ref={orderButtonRef} type="button" onClick={() => setIsOrderModalOpen(true)}
+                            className="flex h-12 cursor-pointer items-center justify-center gap-4 rounded-xl bg-green-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-green-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 sm:min-w-48">
+                            Заказать <IoArrowForward size={18} />
+                        </button>
+                    </footer>
+                </section>
             </div>
-
-            <OrderModal
-                product={product}
-                isOpen={isOrderModalOpen}
-                onClose={() => setIsOrderModalOpen(false)}
-            />
-        </div>
+            <OrderModal product={product} isOpen={isOrderModalOpen} onClose={() => {
+                setIsOrderModalOpen(false);
+                orderButtonRef.current?.focus();
+            }} />
+        </>
     );
 };
 

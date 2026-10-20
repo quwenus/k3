@@ -34,3 +34,7 @@ dist/
 build/
 .DS_Store
 src/assets/img/placeholder.png
+
+# Rejected catalogue image drafts; keep local references only.
+src/assets/img/catalog-car-studio.jpg
+src/assets/img/catalog-moto-studio.jpg

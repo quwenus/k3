@@ -38,3 +38,7 @@ src/assets/img/placeholder.png
 # Rejected catalogue image drafts; keep local references only.
 src/assets/img/catalog-car-studio.jpg
 src/assets/img/catalog-moto-studio.jpg
+
+# Local product document; keep it out of repository history.
+/KM1191.docx
+/КМ1191.docx
